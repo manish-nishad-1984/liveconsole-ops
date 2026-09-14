@@ -1,0 +1,168 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/**
+ * Design tokens.
+ *
+ * Light is the primary surface — a business application is read for eight hours a
+ * day under office lighting, and a white sheet with dark text is what that calls
+ * for. Dark mode is defined for the minority who prefer it, deriving from the same
+ * token names so no component branches on theme.
+ *
+ * Only `--primary` (and the accent/ring that read as its tint) carries the brand.
+ * The `--status-*` scale is deliberately brand-neutral: green must mean "good"
+ * regardless of what colour the company happens to be.
+ */
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222 22% 12%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222 22% 12%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 22% 12%;
+
+    /* Brand — the single action colour. */
+    --primary: 220 70% 35%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 210 20% 96%;
+    --secondary-foreground: 222 22% 20%;
+
+    --muted: 210 20% 97%;
+    --muted-foreground: 220 9% 46%;
+
+    --accent: 220 45% 94%;
+    --accent-foreground: 220 70% 28%;
+
+    --destructive: 0 72% 45%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 220 13% 91%;
+    --input: 220 13% 88%;
+    --ring: 220 70% 42%;
+
+    --status-neutral: 220 9% 46%;
+    --status-info: 213 82% 48%;
+    --status-progress: 262 65% 55%;
+    --status-success: 142 66% 34%;
+    --status-warning: 34 92% 44%;
+    --status-danger: 0 72% 48%;
+
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 222 24% 8%;
+    --foreground: 210 20% 96%;
+
+    --card: 222 22% 11%;
+    --card-foreground: 210 20% 96%;
+
+    --popover: 222 22% 11%;
+    --popover-foreground: 210 20% 96%;
+
+    --primary: 220 62% 55%;
+    --primary-foreground: 222 24% 8%;
+
+    --secondary: 222 18% 17%;
+    --secondary-foreground: 210 20% 92%;
+
+    --muted: 222 18% 15%;
+    --muted-foreground: 218 11% 62%;
+
+    --accent: 220 30% 20%;
+    --accent-foreground: 220 60% 80%;
+
+    --destructive: 0 62% 52%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 222 16% 20%;
+    --input: 222 16% 24%;
+    --ring: 220 62% 60%;
+
+    --status-neutral: 218 11% 62%;
+    --status-info: 213 82% 62%;
+    --status-progress: 262 65% 70%;
+    --status-success: 142 60% 50%;
+    --status-warning: 34 92% 58%;
+    --status-danger: 0 72% 62%;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Tabular figures keep numeric columns aligned down the page. */
+  .numeric {
+    font-variant-numeric: tabular-nums;
+    @apply font-mono text-[0.8125rem];
+  }
+
+  /* Slim, unobtrusive scrollbars — a dense app has a lot of them. */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--border)) transparent;
+  }
+
+  *::-webkit-scrollbar {
+    width: 9px;
+    height: 9px;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    @apply rounded-full bg-border;
+  }
+
+  *::-webkit-scrollbar-thumb:hover {
+    @apply bg-muted-foreground/40;
+  }
+
+  /* Visible focus for keyboard users only. */
+  :focus-visible {
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+  }
+}
+
+@layer components {
+  /**
+   * Compact table. Applied by DataTable so row density is defined once rather
+   * than repeated across every module screen.
+   */
+  .erp-table {
+    @apply w-full border-separate border-spacing-0 text-sm;
+  }
+
+  .erp-table thead th {
+    @apply sticky top-0 z-10 whitespace-nowrap border-b border-border bg-muted/70 px-3 py-2
+      text-left text-2xs font-semibold uppercase tracking-wide text-muted-foreground backdrop-blur;
+  }
+
+  .erp-table tbody td {
+    @apply border-b border-border/70 px-3 py-2 align-middle;
+  }
+
+  .erp-table tbody tr:hover {
+    @apply bg-accent/40;
+  }
+
+  /* Section label above grouped form fields and detail blocks. */
+  .section-label {
+    @apply text-2xs font-semibold uppercase tracking-wider text-muted-foreground;
+  }
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+}

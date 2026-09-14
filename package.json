@@ -1,0 +1,46 @@
+{
+  "name": "liveconsole-ops",
+  "version": "0.1.0",
+  "private": true,
+  "description": "LiveConsole Ops — petty cash and vehicle rental management (React + Express + Prisma + PostgreSQL)",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "dev": "npm-run-all --parallel dev:api dev:web",
+    "dev:api": "npm run dev --workspace @liveconsole-ops/api",
+    "dev:web": "npm run dev --workspace @liveconsole-ops/web",
+    "build": "npm run build --workspace @liveconsole-ops/api && npm run build --workspace @liveconsole-ops/web",
+    "start": "npm run start --workspace @liveconsole-ops/api",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "format": "prettier --write \"**/*.{ts,tsx,js,json,md,css}\"",
+    "db:generate": "npm run db:generate --workspace @liveconsole-ops/api",
+    "db:migrate": "npm run db:migrate --workspace @liveconsole-ops/api",
+    "db:deploy": "npm run db:deploy --workspace @liveconsole-ops/api",
+    "db:seed": "npm run db:seed --workspace @liveconsole-ops/api",
+    "db:studio": "npm run db:studio --workspace @liveconsole-ops/api",
+    "smoke": "npm run smoke --workspace @liveconsole-ops/api",
+    "db:reset": "npm run db:reset --workspace @liveconsole-ops/api",
+    "deploy": "node scripts/deploy.mjs"
+  },
+  "devDependencies": {
+    "basic-ftp": "^6.2.1",
+    "npm-run-all": "^4.1.5",
+    "prettier": "^3.3.3",
+    "typescript": "^5.6.3"
+  },
+  "//allowScripts": "Prisma's engines and esbuild's binary are downloaded by postinstall scripts; without these entries `npm install` produces a tree that cannot generate a client or build.",
+  "allowScripts": {
+    "@prisma/client@5.22.0": true,
+    "@prisma/engines@5.22.0": true,
+    "prisma@5.22.0": true,
+    "esbuild@0.21.5": true,
+    "esbuild@0.27.7": true,
+    "esbuild@0.28.2": true
+  }
+}

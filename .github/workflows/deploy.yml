@@ -1,0 +1,54 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Never let two releases sync over FTP at the same time.
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      FTP_HOST: win8194.site4now.net
+      FTP_USER: liveconsole
+      FTP_ROOT: /
+      SITE_URL: http://live.kriviinfotech.com
+      FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+      PRODUCTION_ENV: ${{ secrets.PRODUCTION_ENV }}
+    steps:
+      - name: Check secrets
+        id: secrets
+        run: |
+          if [ -z "$FTP_PASSWORD" ] || [ -z "$PRODUCTION_ENV" ]; then
+            echo "::notice::FTP_PASSWORD / PRODUCTION_ENV secrets are not set — skipping deploy."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.secrets.outputs.ready == 'true'
+
+      - uses: actions/setup-node@v4
+        if: steps.secrets.outputs.ready == 'true'
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install
+        if: steps.secrets.outputs.ready == 'true'
+        run: npm ci
+
+      - name: Typecheck
+        if: steps.secrets.outputs.ready == 'true'
+        run: npm run typecheck
+
+      - name: Deploy
+        if: steps.secrets.outputs.ready == 'true'
+        run: npm run deploy

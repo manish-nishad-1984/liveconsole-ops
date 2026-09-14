@@ -1,0 +1,423 @@
+// ============================================================================
+// LiveConsole Ops — PostgreSQL schema
+//
+// Everything here is generic infrastructure: tenants, accounts, RBAC, sessions,
+// audit trail, document numbering and settings. There are deliberately no
+// business-domain models — those are what the project built on this adds.
+//
+// ---------------------------------------------------------------------------
+// CONVENTIONS
+//
+//  * UUID primary keys everywhere (`@db.Uuid`).
+//  * Multi-tenant: every tenant-owned table carries `organizationId`, is indexed
+//    on it, and scopes its unique keys by it. `organizationId` is *always* read
+//    from the authenticated session, never from a request body.
+//  * Tables are snake_case plural (`@@map`); columns stay camelCase so Prisma
+//    code and DTOs read identically.
+//  * Soft delete is `deletedAt` + `isActive`. The audit trail is append-only and
+//    has neither.
+// ============================================================================
+
+generator client {
+  provider      = "prisma-client-js"
+  // Production is Windows (IIS); "windows" keeps that engine in the build even
+  // when the client is generated on a Linux CI runner.
+  binaryTargets = ["native", "windows"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================================
+// Enums
+// ============================================================================
+
+enum UserStatus {
+  ACTIVE
+  INVITED
+  SUSPENDED
+  DISABLED
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  RESTORE
+  LOGIN
+  LOGOUT
+  LOGIN_FAILED
+  PASSWORD_CHANGE
+  PASSWORD_RESET
+  PERMISSION_CHANGE
+  STATUS_CHANGE
+  EXPORT
+  IMPORT
+}
+
+// ============================================================================
+// Tenancy
+// ============================================================================
+
+/// The tenant root. Every other tenant-owned row hangs off this by
+/// `organizationId`, which is the whole multi-tenancy boundary.
+model Organization {
+  id        String  @id @default(uuid()) @db.Uuid
+  code      String  @unique
+  name      String
+  legalName String?
+
+  email   String?
+  phone   String?
+  website String?
+  logoUrl String?
+
+  addressLine1 String?
+  addressLine2 String?
+  pincode      String?
+  country      String  @default("India")
+
+  currency             String @default("INR")
+  timezone             String @default("Asia/Kolkata")
+  fiscalYearStartMonth Int    @default(4)
+
+  isActive    Boolean   @default(true)
+  deletedAt   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  createdById String?   @db.Uuid
+  updatedById String?   @db.Uuid
+
+  branches        Branch[]
+  users           User[]
+  roles           Role[]
+  auditLogs       AuditLog[]
+  companySettings CompanySetting[]
+  numberSequences NumberSequence[]
+
+  @@index([isActive])
+  @@index([deletedAt])
+  @@map("organizations")
+}
+
+/// An optional second axis inside a tenant — office, site, region. Kept because
+/// multi-location tenants are common and retrofitting it later means touching
+/// every table that should have been scoped by it.
+model Branch {
+  id             String @id @default(uuid()) @db.Uuid
+  organizationId String @db.Uuid
+  code           String
+  name           String
+
+  addressLine1 String?
+  pincode      String?
+  phone        String?
+  email        String?
+  isHeadOffice Boolean @default(false)
+
+  isActive    Boolean   @default(true)
+  deletedAt   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  createdById String?   @db.Uuid
+  updatedById String?   @db.Uuid
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  users        User[]
+
+  @@unique([organizationId, code])
+  @@index([organizationId])
+  @@index([organizationId, isActive])
+  @@map("branches")
+}
+
+// ============================================================================
+// Accounts
+// ============================================================================
+
+model User {
+  id             String  @id @default(uuid()) @db.Uuid
+  organizationId String  @db.Uuid
+  branchId       String? @db.Uuid
+
+  employeeCode String?
+  fullName     String
+  /// Globally unique, not per-organisation: sign-in is by email alone, so the
+  /// address has to identify exactly one account across the whole platform.
+  email        String  @unique
+  mobile       String?
+  passwordHash String
+  avatarUrl    String?
+  designation  String?
+
+  status UserStatus @default(INVITED)
+  /// Bypasses every permission check. Reserved for platform owner accounts.
+  isSuperAdmin Boolean @default(false)
+
+  mustChangePassword Boolean @default(false)
+  /// Bumped to invalidate every outstanding access and refresh token at once —
+  /// forced sign-out with no blacklist to maintain.
+  tokenVersion       Int     @default(1)
+
+  lastLoginAt         DateTime?
+  lastLoginIp         String?
+  failedLoginAttempts Int       @default(0)
+  lockedUntil         DateTime?
+
+  reportsToId String? @db.Uuid
+
+  isActive    Boolean   @default(true)
+  deletedAt   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  createdById String?   @db.Uuid
+  updatedById String?   @db.Uuid
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  branch       Branch?      @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  reportsTo    User?        @relation("UserReportsTo", fields: [reportsToId], references: [id], onDelete: SetNull)
+  subordinates User[]       @relation("UserReportsTo")
+
+  roles               UserRole[]
+  refreshTokens       RefreshToken[]
+  passwordResetTokens PasswordResetToken[]
+  auditLogs           AuditLog[]
+
+  @@unique([organizationId, employeeCode])
+  @@index([organizationId])
+  @@index([branchId])
+  @@index([organizationId, status])
+  @@index([mobile])
+  @@index([createdAt])
+  @@index([deletedAt])
+  @@map("users")
+}
+
+// ============================================================================
+// RBAC
+//
+// Global `Permission` rows (one per catalog string in packages/types/src/rbac.ts)
+// ↔ RolePermission ↔ tenant-scoped Role ↔ UserRole ↔ User. The TypeScript catalog
+// is the source of truth; the seed script reconciles this table against it.
+// ============================================================================
+
+model Permission {
+  id          String  @id @default(uuid()) @db.Uuid
+  key         String  @unique
+  module      String
+  action      String
+  description String?
+
+  createdAt DateTime @default(now())
+
+  roles RolePermission[]
+
+  @@index([module])
+  @@map("permissions")
+}
+
+model Role {
+  id             String  @id @default(uuid()) @db.Uuid
+  organizationId String  @db.Uuid
+  name           String
+  slug           String
+  description    String?
+  /// Seeded roles cannot be renamed or deleted; their permission sets stay editable.
+  isSystem       Boolean @default(false)
+
+  isActive    Boolean   @default(true)
+  deletedAt   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  createdById String?   @db.Uuid
+  updatedById String?   @db.Uuid
+
+  organization Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  permissions  RolePermission[]
+  users        UserRole[]
+
+  @@unique([organizationId, slug])
+  @@index([organizationId])
+  @@map("roles")
+}
+
+model RolePermission {
+  id           String @id @default(uuid()) @db.Uuid
+  roleId       String @db.Uuid
+  permissionId String @db.Uuid
+
+  createdAt   DateTime @default(now())
+  createdById String?  @db.Uuid
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, permissionId])
+  @@index([permissionId])
+  @@map("role_permissions")
+}
+
+model UserRole {
+  id     String @id @default(uuid()) @db.Uuid
+  userId String @db.Uuid
+  roleId String @db.Uuid
+
+  createdAt   DateTime @default(now())
+  createdById String?  @db.Uuid
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, roleId])
+  @@index([roleId])
+  @@map("user_roles")
+}
+
+// ============================================================================
+// Sessions & credentials
+// ============================================================================
+
+model RefreshToken {
+  id     String @id @default(uuid()) @db.Uuid
+  userId String @db.Uuid
+  /// SHA-256 of the token; the raw value never touches the database.
+  tokenHash String @unique
+  /// Rotation family — replay of a revoked member revokes the whole family.
+  familyId  String @db.Uuid
+
+  expiresAt         DateTime
+  revokedAt         DateTime?
+  revokedReason     String?
+  replacedByTokenId String?   @db.Uuid
+  userAgent         String?
+  ipAddress         String?
+
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([familyId])
+  @@index([expiresAt])
+  @@map("refresh_tokens")
+}
+
+model PasswordResetToken {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @db.Uuid
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  ipAddress String?
+
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("password_reset_tokens")
+}
+
+// ============================================================================
+// Audit trail — append-only, so no isActive/deletedAt
+// ============================================================================
+
+model AuditLog {
+  id             String      @id @default(uuid()) @db.Uuid
+  organizationId String?     @db.Uuid
+  action         AuditAction
+
+  entityType  String
+  entityId    String? @db.Uuid
+  entityLabel String?
+
+  oldValues Json?
+  newValues Json?
+  /// Names of the fields that actually changed, for cheap filtering.
+  changedFields String[]
+
+  actorId    String? @db.Uuid
+  actorEmail String?
+  ipAddress  String?
+  userAgent  String?
+  requestId  String?
+
+  createdAt DateTime @default(now())
+
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  actor        User?         @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@index([entityType, entityId])
+  @@index([actorId])
+  @@index([organizationId, action])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+// ============================================================================
+// Settings & numbering
+// ============================================================================
+
+/// Per-tenant document numbering: `<prefix>/<fiscalYear>/<0001>`. The counter is
+/// advanced inside the transaction that writes the document, so two documents
+/// created in the same second cannot take the same number.
+model NumberSequence {
+  id             String @id @default(uuid()) @db.Uuid
+  organizationId String @db.Uuid
+  prefix         String
+  fiscalYear     String
+  nextValue      Int    @default(1)
+  padTo          Int    @default(4)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, prefix, fiscalYear])
+  @@index([organizationId])
+  @@map("number_sequences")
+}
+
+/// Tenant-scoped key/value settings. `scope` groups them for the settings screen.
+model CompanySetting {
+  id             String  @id @default(uuid()) @db.Uuid
+  organizationId String  @db.Uuid
+  key            String
+  value          Json
+  scope          String  @default("GENERAL")
+  description    String?
+  dataType       String  @default("string")
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  updatedById String?  @db.Uuid
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, key])
+  @@index([organizationId])
+  @@index([organizationId, scope])
+  @@map("company_settings")
+}
+
+/// Platform-wide settings, deliberately not tenant-scoped. `isInternal` marks the
+/// ones a tenant administrator must never see or change.
+model SystemSetting {
+  id          String  @id @default(uuid()) @db.Uuid
+  key         String  @unique
+  value       Json
+  scope       String  @default("GLOBAL")
+  description String?
+  isInternal  Boolean @default(false)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  updatedById String?  @db.Uuid
+
+  @@index([scope])
+  @@map("system_settings")
+}

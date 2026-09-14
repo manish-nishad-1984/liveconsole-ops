@@ -1,0 +1,18 @@
+{
+  "name": "@liveconsole-ops/types",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "API contracts, DTOs, enums and the RBAC catalog shared by the web and api apps",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3"
+  }
+}

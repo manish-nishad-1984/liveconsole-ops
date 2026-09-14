@@ -1,0 +1,16 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    // No `rootDir`: `@liveconsole-ops/types` is consumed as TypeScript source from
+    // outside this directory. Nothing is emitted from here — the consuming app's
+    // bundler compiles it — so tsc only ever type-checks.
+    "outDir": "./dist",
+    "noEmit": true,
+    "declaration": false,
+    "baseUrl": ".",
+    "paths": {
+      "@liveconsole-ops/types": ["../types/src/index.ts"]
+    }
+  },
+  "include": ["src/**/*.ts"]
+}
