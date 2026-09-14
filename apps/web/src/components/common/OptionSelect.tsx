@@ -1,9 +1,11 @@
 import type { OptionDto } from '@liveconsole-ops/types';
+import { Plus } from 'lucide-react';
 
 import {
   Select,
   SelectContent,
   SelectItem,
+  SelectSeparator,
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
@@ -11,6 +13,8 @@ import { cn } from '@/lib/utils';
 
 /** Radix Select cannot hold an empty string, so "nothing chosen" has a sentinel. */
 const NONE = '__none__';
+/** The trailing "Add new" entry — picking it opens a form instead of choosing a value. */
+const ADD_NEW = '__add_new__';
 
 export interface OptionSelectProps {
   options: OptionDto[] | undefined;
@@ -19,6 +23,9 @@ export interface OptionSelectProps {
   placeholder?: string;
   /** Adds a first entry that clears the value — "All sites", "No site". */
   emptyLabel?: string;
+  /** Adds a last entry that creates a new record, e.g. opens "Add a site". */
+  onAddNew?: () => void;
+  addNewLabel?: string;
   id?: string;
   invalid?: boolean;
   disabled?: boolean;
@@ -33,6 +40,8 @@ export const OptionSelect = ({
   onChange,
   placeholder = 'Select…',
   emptyLabel,
+  onAddNew,
+  addNewLabel = 'Add new',
   id,
   invalid,
   disabled,
@@ -41,7 +50,14 @@ export const OptionSelect = ({
 }: OptionSelectProps) => (
   <Select
     value={value ?? (emptyLabel ? NONE : undefined)}
-    onValueChange={(next) => onChange(next === NONE ? null : next)}
+    onValueChange={(next) => {
+      if (next === ADD_NEW) {
+        // Let the Select finish closing and returning focus before a dialog takes it.
+        setTimeout(() => onAddNew?.(), 0);
+        return;
+      }
+      onChange(next === NONE ? null : next);
+    }}
     disabled={disabled}
   >
     <SelectTrigger id={id} invalid={invalid} className={cn(className)} aria-label={ariaLabel}>
@@ -57,6 +73,17 @@ export const OptionSelect = ({
           ) : null}
         </SelectItem>
       ))}
+      {onAddNew ? (
+        <>
+          {emptyLabel || options?.length ? <SelectSeparator /> : null}
+          <SelectItem value={ADD_NEW} textValue={addNewLabel}>
+            <span className="flex items-center gap-1.5 font-medium text-primary">
+              <Plus className="size-3.5" />
+              {addNewLabel}
+            </span>
+          </SelectItem>
+        </>
+      ) : null}
     </SelectContent>
   </Select>
 );

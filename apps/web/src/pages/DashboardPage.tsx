@@ -82,7 +82,7 @@ const PendingList = ({
             <p className="truncate text-2xs text-muted-foreground">
               {formatDateOnly(expense.expenseDate)} ·{' '}
               {showEmployee ? `${expense.employee.fullName} · ` : ''}
-              {expense.site.name}
+              {expense.site?.name ?? expense.category.name}
             </p>
           </div>
           <div className="shrink-0 text-right">

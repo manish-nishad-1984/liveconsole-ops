@@ -22,6 +22,7 @@ import { formatFileSize, prepareUpload } from '@/lib/image';
 import { PAYMENT_MODE_LABELS } from '@/lib/labels';
 import { queryKeys } from '@/lib/query-client';
 import { ReceiptGallery } from '@/pages/expenses/ReceiptGallery';
+import { QuickAddDialogs, useQuickAdd } from '@/pages/quick-add/QuickAddDialogs';
 import { expensesService } from '@/services/petty-cash.service';
 import { useAuthStore } from '@/store/auth.store';
 import { todayIso } from '@/utils/dates';
@@ -40,7 +41,8 @@ const MAX_RECEIPTS = 5;
 const schema = z.object({
   employeeId: z.string(),
   expenseDate: z.string().min(1, 'Choose the date'),
-  siteId: z.string().min(1, 'Choose the site'),
+  /** Optional — empty means the expense is not for one site. */
+  siteId: z.string(),
   categoryId: z.string().min(1, 'Choose a category'),
   amount: z
     .string()
@@ -70,6 +72,7 @@ export const ExpenseFormModal = ({ open, onOpenChange, expense }: ExpenseFormMod
   const cameraInput = useRef<HTMLInputElement>(null);
   const fileInput = useRef<HTMLInputElement>(null);
 
+  const quickAdd = useQuickAdd();
   const sites = useSiteOptions(open);
   const categories = useCategoryOptions(open);
   const employees = useEmployeeOptions(open && canManage);
@@ -109,7 +112,7 @@ export const ExpenseFormModal = ({ open, onOpenChange, expense }: ExpenseFormMod
     reset({
       employeeId: expense?.employee.id ?? me?.id ?? '',
       expenseDate: expense?.expenseDate ?? todayIso(),
-      siteId: expense?.site.id ?? '',
+      siteId: expense?.site?.id ?? '',
       categoryId: expense?.category.id ?? '',
       amount: expense?.amount ?? '',
       paymentMode: expense?.paymentMode ?? 'CASH',
@@ -160,7 +163,7 @@ export const ExpenseFormModal = ({ open, onOpenChange, expense }: ExpenseFormMod
       const payload = {
         ...(canManage && values.employeeId ? { employeeId: values.employeeId } : {}),
         expenseDate: values.expenseDate,
-        siteId: values.siteId,
+        siteId: values.siteId || null,
         categoryId: values.categoryId,
         amount: values.amount,
         paymentMode: values.paymentMode,
@@ -210,199 +213,219 @@ export const ExpenseFormModal = ({ open, onOpenChange, expense }: ExpenseFormMod
   const busy = mutation.isPending || uploading;
 
   return (
-    <FormModal
-      open={open}
-      onOpenChange={onOpenChange}
-      title={expense ? `Edit ${expense.expenseNo}` : 'Add an expense'}
-      description={
-        expense?.status === 'REJECTED'
-          ? 'Saving sends this expense for approval again.'
-          : 'It goes to the office for approval. Attach a photo of the bill.'
-      }
-      onSubmit={handleSubmit((values) => mutation.mutate(values))}
-      submitLabel={uploading ? 'Uploading receipts…' : expense ? 'Save changes' : 'Submit expense'}
-      isSubmitting={busy}
-      size="md"
-    >
-      {formError ? <FormAlert tone="error">{formError}</FormAlert> : null}
-      {expense?.status === 'REJECTED' && expense.reviewNote ? (
-        <FormAlert tone="warning" title="Rejected">
-          {expense.reviewNote}
-        </FormAlert>
-      ) : null}
+    <>
+      <FormModal
+        open={open}
+        onOpenChange={onOpenChange}
+        title={expense ? `Edit ${expense.expenseNo}` : 'Add an expense'}
+        description={
+          expense?.status === 'REJECTED'
+            ? 'Saving sends this expense for approval again.'
+            : 'It goes to the office for approval. Attach a photo of the bill.'
+        }
+        onSubmit={handleSubmit((values) => mutation.mutate(values))}
+        submitLabel={
+          uploading ? 'Uploading receipts…' : expense ? 'Save changes' : 'Submit expense'
+        }
+        isSubmitting={busy}
+        size="md"
+      >
+        {formError ? <FormAlert tone="error">{formError}</FormAlert> : null}
+        {expense?.status === 'REJECTED' && expense.reviewNote ? (
+          <FormAlert tone="warning" title="Rejected">
+            {expense.reviewNote}
+          </FormAlert>
+        ) : null}
 
-      <FormGrid>
-        {canManage ? (
-          <FormField label="Employee" hint="Who spent the money." full>
+        <FormGrid>
+          {canManage ? (
+            <FormField label="Employee" hint="Who spent the money." full>
+              {(props) => (
+                <OptionSelect
+                  id={props.id}
+                  options={employees.data}
+                  value={watch('employeeId') || null}
+                  onChange={(value) => setValue('employeeId', value ?? '')}
+                  onAddNew={quickAdd.addNew('employee')}
+                  addNewLabel="Add new employee"
+                />
+              )}
+            </FormField>
+          ) : null}
+
+          <FormField label="Amount (₹)" error={errors.amount?.message} required>
             {(props) => (
-              <OptionSelect
-                id={props.id}
-                options={employees.data}
-                value={watch('employeeId') || null}
-                onChange={(value) => setValue('employeeId', value ?? '')}
+              <Input
+                {...props}
+                {...register('amount')}
+                inputMode="decimal"
+                placeholder="0.00"
+                autoComplete="off"
               />
             )}
           </FormField>
-        ) : null}
 
-        <FormField label="Amount (₹)" error={errors.amount?.message} required>
-          {(props) => (
-            <Input
-              {...props}
-              {...register('amount')}
-              inputMode="decimal"
-              placeholder="0.00"
-              autoComplete="off"
+          <FormField label="Date" error={errors.expenseDate?.message} required>
+            {(props) => (
+              <Input {...props} {...register('expenseDate')} type="date" max={todayIso()} />
+            )}
+          </FormField>
+
+          <FormField label="Site" error={errors.siteId?.message} hint="Optional.">
+            {(props) => (
+              <OptionSelect
+                id={props.id}
+                invalid={props.invalid}
+                options={sites.data}
+                value={watch('siteId') || null}
+                onChange={(value) => setValue('siteId', value ?? '', { shouldValidate: true })}
+                emptyLabel="No site"
+                onAddNew={quickAdd.addNew('site')}
+                addNewLabel="Add new site"
+              />
+            )}
+          </FormField>
+
+          <FormField label="Category" error={errors.categoryId?.message} required>
+            {(props) => (
+              <OptionSelect
+                id={props.id}
+                invalid={props.invalid}
+                options={categories.data}
+                value={watch('categoryId') || null}
+                onChange={(value) => setValue('categoryId', value ?? '', { shouldValidate: true })}
+                placeholder="Choose category"
+                onAddNew={quickAdd.addNew('category')}
+                addNewLabel="Add new category"
+              />
+            )}
+          </FormField>
+
+          <FormField label="What was it for?" error={errors.description?.message} required full>
+            {(props) => (
+              <Textarea
+                {...props}
+                {...register('description')}
+                rows={2}
+                placeholder="e.g. Diesel for generator, tea for crew"
+              />
+            )}
+          </FormField>
+
+          <FormField label="Paid to" error={errors.paidTo?.message} hint="Shop or person.">
+            {(props) => <Input {...props} {...register('paidTo')} />}
+          </FormField>
+
+          <FormField label="Paid by">
+            {() => (
+              <Segmented
+                value={watch('paymentMode')}
+                options={PAYMENT_MODES}
+                labels={PAYMENT_MODE_LABELS}
+                onChange={(next) => setValue('paymentMode', next)}
+              />
+            )}
+          </FormField>
+        </FormGrid>
+
+        <FormSection
+          title={`Receipts (${receiptCount}/${MAX_RECEIPTS})`}
+          description="Photo of the bill or a PDF."
+        >
+          {expense && existingReceipts.length > 0 ? (
+            <ReceiptGallery
+              expenseId={expense.id}
+              attachments={existingReceipts}
+              onRemove={(attachment) => removeReceipt.mutate(attachment)}
             />
-          )}
-        </FormField>
+          ) : null}
 
-        <FormField label="Date" error={errors.expenseDate?.message} required>
-          {(props) => (
-            <Input {...props} {...register('expenseDate')} type="date" max={todayIso()} />
-          )}
-        </FormField>
-
-        <FormField label="Site" error={errors.siteId?.message} required>
-          {(props) => (
-            <OptionSelect
-              id={props.id}
-              invalid={props.invalid}
-              options={sites.data}
-              value={watch('siteId') || null}
-              onChange={(value) => setValue('siteId', value ?? '', { shouldValidate: true })}
-              placeholder="Choose site"
-            />
-          )}
-        </FormField>
-
-        <FormField label="Category" error={errors.categoryId?.message} required>
-          {(props) => (
-            <OptionSelect
-              id={props.id}
-              invalid={props.invalid}
-              options={categories.data}
-              value={watch('categoryId') || null}
-              onChange={(value) => setValue('categoryId', value ?? '', { shouldValidate: true })}
-              placeholder="Choose category"
-            />
-          )}
-        </FormField>
-
-        <FormField label="What was it for?" error={errors.description?.message} required full>
-          {(props) => (
-            <Textarea
-              {...props}
-              {...register('description')}
-              rows={2}
-              placeholder="e.g. Diesel for generator, tea for crew"
-            />
-          )}
-        </FormField>
-
-        <FormField label="Paid to" error={errors.paidTo?.message} hint="Shop or person.">
-          {(props) => <Input {...props} {...register('paidTo')} />}
-        </FormField>
-
-        <FormField label="Paid by">
-          {() => (
-            <Segmented
-              value={watch('paymentMode')}
-              options={PAYMENT_MODES}
-              labels={PAYMENT_MODE_LABELS}
-              onChange={(next) => setValue('paymentMode', next)}
-            />
-          )}
-        </FormField>
-      </FormGrid>
-
-      <FormSection
-        title={`Receipts (${receiptCount}/${MAX_RECEIPTS})`}
-        description="Photo of the bill or a PDF."
-      >
-        {expense && existingReceipts.length > 0 ? (
-          <ReceiptGallery
-            expenseId={expense.id}
-            attachments={existingReceipts}
-            onRemove={(attachment) => removeReceipt.mutate(attachment)}
-          />
-        ) : null}
-
-        {queued.length > 0 ? (
-          <ul className="space-y-1.5">
-            {queued.map((file, index) => (
-              <li
-                key={`${file.name}-${index}`}
-                className="flex items-center gap-2 rounded-md border border-border px-2.5 py-1.5 text-xs"
-              >
-                <Paperclip className="size-3.5 shrink-0 text-muted-foreground" />
-                <span className="min-w-0 flex-1 truncate">{file.name}</span>
-                <span className="shrink-0 text-2xs text-muted-foreground">
-                  {formatFileSize(file.size)}
-                </span>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon-sm"
-                  className="size-6"
-                  disabled={busy}
-                  onClick={() => setQueued((current) => current.filter((_, i) => i !== index))}
-                  aria-label={`Remove ${file.name}`}
+          {queued.length > 0 ? (
+            <ul className="space-y-1.5">
+              {queued.map((file, index) => (
+                <li
+                  key={`${file.name}-${index}`}
+                  className="flex items-center gap-2 rounded-md border border-border px-2.5 py-1.5 text-xs"
                 >
-                  <X className="size-3.5" />
-                </Button>
-              </li>
-            ))}
-          </ul>
-        ) : null}
+                  <Paperclip className="size-3.5 shrink-0 text-muted-foreground" />
+                  <span className="min-w-0 flex-1 truncate">{file.name}</span>
+                  <span className="shrink-0 text-2xs text-muted-foreground">
+                    {formatFileSize(file.size)}
+                  </span>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    className="size-6"
+                    disabled={busy}
+                    onClick={() => setQueued((current) => current.filter((_, i) => i !== index))}
+                    aria-label={`Remove ${file.name}`}
+                  >
+                    <X className="size-3.5" />
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          ) : null}
 
-        {receiptCount < MAX_RECEIPTS ? (
-          <div className="flex flex-wrap gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              disabled={busy}
-              onClick={() => cameraInput.current?.click()}
-            >
-              <Camera />
-              Take photo
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              disabled={busy}
-              onClick={() => fileInput.current?.click()}
-            >
-              <Paperclip />
-              Choose file
-            </Button>
-            <input
-              ref={cameraInput}
-              type="file"
-              accept="image/*"
-              capture="environment"
-              className="hidden"
-              onChange={(event) => {
-                addFiles(event.target.files);
-                event.target.value = '';
-              }}
-            />
-            <input
-              ref={fileInput}
-              type="file"
-              accept="image/jpeg,image/png,image/webp,application/pdf"
-              multiple
-              className="hidden"
-              onChange={(event) => {
-                addFiles(event.target.files);
-                event.target.value = '';
-              }}
-            />
-          </div>
-        ) : null}
-      </FormSection>
-    </FormModal>
+          {receiptCount < MAX_RECEIPTS ? (
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={busy}
+                onClick={() => cameraInput.current?.click()}
+              >
+                <Camera />
+                Take photo
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={busy}
+                onClick={() => fileInput.current?.click()}
+              >
+                <Paperclip />
+                Choose file
+              </Button>
+              <input
+                ref={cameraInput}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                className="hidden"
+                onChange={(event) => {
+                  addFiles(event.target.files);
+                  event.target.value = '';
+                }}
+              />
+              <input
+                ref={fileInput}
+                type="file"
+                accept="image/jpeg,image/png,image/webp,application/pdf"
+                multiple
+                className="hidden"
+                onChange={(event) => {
+                  addFiles(event.target.files);
+                  event.target.value = '';
+                }}
+              />
+            </div>
+          ) : null}
+        </FormSection>
+      </FormModal>
+
+      <QuickAddDialogs
+        adding={quickAdd.adding}
+        onClose={quickAdd.close}
+        onAdded={(kind, id) => {
+          if (kind === 'site') setValue('siteId', id, { shouldValidate: true });
+          if (kind === 'category') setValue('categoryId', id, { shouldValidate: true });
+          if (kind === 'employee') setValue('employeeId', id);
+        }}
+      />
+    </>
   );
 };

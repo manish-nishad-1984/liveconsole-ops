@@ -14,7 +14,7 @@ import {
 export const expenseSchema = z.object({
   /** Honoured only for `expenses:manage`; everyone else files for themselves. */
   employeeId: optionalUuid,
-  siteId: uuid,
+  siteId: optionalUuid,
   categoryId: uuid,
   expenseDate: dateOnly,
   amount,
@@ -26,7 +26,7 @@ export const expenseSchema = z.object({
 export const updateExpenseSchema = z
   .object({
     employeeId: uuid,
-    siteId: uuid,
+    siteId: optionalUuid,
     categoryId: uuid,
     expenseDate: dateOnly,
     amount,

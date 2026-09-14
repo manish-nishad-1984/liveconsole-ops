@@ -4,7 +4,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { ColumnDef } from '@tanstack/react-table';
 import {
   Ban,
-  Copy,
   Download,
   KeyRound,
   MoreHorizontal,
@@ -41,6 +40,7 @@ import { useListQuery } from '@/hooks/use-list-query';
 import { usePermissions } from '@/hooks/use-permissions';
 import { ResourceLayout } from '@/layouts/PageLayout';
 import { queryKeys } from '@/lib/query-client';
+import { TemporaryPasswordDialog } from '@/pages/users/TemporaryPasswordDialog';
 import { UserFormModal } from '@/pages/users/UserFormModal';
 import { usersService } from '@/services/users.service';
 import { getErrorMessage } from '@/utils/errors';
@@ -371,37 +371,10 @@ const UsersListPage = () => {
         }}
       />
 
-      {/*
-       * The one place a password is ever displayed. It is not stored in plaintext
-       * anywhere and cannot be retrieved again, so the dialog says so plainly.
-       */}
-      <ConfirmDialog
-        open={Boolean(revealed)}
-        onOpenChange={(open) => !open && setRevealed(null)}
-        variant="info"
-        title="Temporary password"
-        description={`Give this to ${revealed?.email ?? 'the user'}. It is shown once and cannot be retrieved again.`}
-        confirmLabel="Done"
-        cancelLabel="Close"
-        onConfirm={() => setRevealed(null)}
-      >
-        <div className="flex items-center gap-2 rounded-md border border-border bg-muted/40 px-3 py-2">
-          <code className="flex-1 truncate font-mono text-sm">{revealed?.password}</code>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon-sm"
-            aria-label="Copy password"
-            onClick={() => {
-              if (!revealed) return;
-              void navigator.clipboard.writeText(revealed.password);
-              toast.success('Copied to clipboard');
-            }}
-          >
-            <Copy />
-          </Button>
-        </div>
-      </ConfirmDialog>
+      <TemporaryPasswordDialog
+        revealed={revealed ? { loginId: revealed.email, password: revealed.password } : null}
+        onClose={() => setRevealed(null)}
+      />
     </ResourceLayout>
   );
 };

@@ -23,6 +23,7 @@ import { useEmployeeOptions, useSiteOptions } from '@/hooks/use-options';
 import { useCan } from '@/hooks/use-permissions';
 import { PAYMENT_MODE_LABELS } from '@/lib/labels';
 import { queryKeys } from '@/lib/query-client';
+import { QuickAddDialogs, useQuickAdd } from '@/pages/quick-add/QuickAddDialogs';
 import { balancesService, cashBookService } from '@/services/petty-cash.service';
 import { applyFieldErrors } from '@/utils/errors';
 import { todayIso } from '@/utils/dates';
@@ -64,6 +65,7 @@ export const CashEntryFormModal = ({
 }: CashEntryFormModalProps) => {
   const queryClient = useQueryClient();
   const [formError, setFormError] = useState<string | null>(null);
+  const quickAdd = useQuickAdd();
   const employees = useEmployeeOptions(open);
   const sites = useSiteOptions(open);
   const canSeeBalances = useCan('balances:manage');
@@ -147,106 +149,123 @@ export const CashEntryFormModal = ({
   });
 
   return (
-    <FormModal
-      open={open}
-      onOpenChange={onOpenChange}
-      title={
-        entry ? `Edit ${entry.entryNo}` : type === 'GIVEN' ? 'Give cash' : 'Record cash returned'
-      }
-      description={
-        type === 'GIVEN'
-          ? 'Money handed to an employee for site expenses.'
-          : 'Unspent money an employee handed back.'
-      }
-      onSubmit={handleSubmit((values) => mutation.mutate(values))}
-      submitLabel={entry ? 'Save changes' : 'Save entry'}
-      isSubmitting={mutation.isPending}
-      size="md"
-    >
-      {formError ? <FormAlert tone="error">{formError}</FormAlert> : null}
+    <>
+      <FormModal
+        open={open}
+        onOpenChange={onOpenChange}
+        title={
+          entry ? `Edit ${entry.entryNo}` : type === 'GIVEN' ? 'Give cash' : 'Record cash returned'
+        }
+        description={
+          type === 'GIVEN'
+            ? 'Money handed to an employee for site expenses.'
+            : 'Unspent money an employee handed back.'
+        }
+        onSubmit={handleSubmit((values) => mutation.mutate(values))}
+        submitLabel={entry ? 'Save changes' : 'Save entry'}
+        isSubmitting={mutation.isPending}
+        size="md"
+      >
+        {formError ? <FormAlert tone="error">{formError}</FormAlert> : null}
 
-      <Segmented
-        value={type}
-        options={CASH_ENTRY_TYPES}
-        labels={TYPE_LABELS}
-        onChange={(next) => setValue('type', next)}
-      />
+        <Segmented
+          value={type}
+          options={CASH_ENTRY_TYPES}
+          labels={TYPE_LABELS}
+          onChange={(next) => setValue('type', next)}
+        />
 
-      <FormGrid>
-        <FormField
-          label="Employee"
-          error={errors.employeeId?.message}
-          required
-          full
-          hint={
-            currentBalance !== undefined
-              ? `Currently holds ${formatCurrency(currentBalance)}`
-              : undefined
-          }
-        >
-          {(props) => (
-            <OptionSelect
-              id={props.id}
-              invalid={props.invalid}
-              options={employees.data}
-              value={employeeId || null}
-              onChange={(value) => setValue('employeeId', value ?? '', { shouldValidate: true })}
-              placeholder="Choose employee"
-            />
-          )}
-        </FormField>
-
-        <FormField label="Amount (₹)" error={errors.amount?.message} required>
-          {(props) => (
-            <Input
-              {...props}
-              {...register('amount')}
-              inputMode="decimal"
-              placeholder="0.00"
-              autoComplete="off"
-            />
-          )}
-        </FormField>
-
-        <FormField label="Date" error={errors.entryDate?.message} required>
-          {(props) => <Input {...props} {...register('entryDate')} type="date" max={todayIso()} />}
-        </FormField>
-
-        <FormField label="Paid by" full>
-          {() => (
-            <Segmented
-              value={paymentMode}
-              options={PAYMENT_MODES}
-              labels={PAYMENT_MODE_LABELS}
-              onChange={(next) => setValue('paymentMode', next)}
-            />
-          )}
-        </FormField>
-
-        {paymentMode !== 'CASH' ? (
-          <FormField label="UPI / bank reference" error={errors.referenceNo?.message} full>
+        <FormGrid>
+          <FormField
+            label="Employee"
+            error={errors.employeeId?.message}
+            required
+            full
+            hint={
+              currentBalance !== undefined
+                ? `Currently holds ${formatCurrency(currentBalance)}`
+                : undefined
+            }
+          >
             {(props) => (
-              <Input {...props} {...register('referenceNo')} placeholder="Transaction ID" />
+              <OptionSelect
+                id={props.id}
+                invalid={props.invalid}
+                options={employees.data}
+                value={employeeId || null}
+                onChange={(value) => setValue('employeeId', value ?? '', { shouldValidate: true })}
+                placeholder="Choose employee"
+                onAddNew={quickAdd.addNew('employee')}
+                addNewLabel="Add new employee"
+              />
             )}
           </FormField>
-        ) : null}
 
-        <FormField label="Site" hint="Optional — if the cash is for one site." full>
-          {(props) => (
-            <OptionSelect
-              id={props.id}
-              options={sites.data}
-              value={watch('siteId')}
-              onChange={(value) => setValue('siteId', value)}
-              emptyLabel="Not for a specific site"
-            />
-          )}
-        </FormField>
+          <FormField label="Amount (₹)" error={errors.amount?.message} required>
+            {(props) => (
+              <Input
+                {...props}
+                {...register('amount')}
+                inputMode="decimal"
+                placeholder="0.00"
+                autoComplete="off"
+              />
+            )}
+          </FormField>
 
-        <FormField label="Notes" error={errors.notes?.message} full>
-          {(props) => <Textarea {...props} {...register('notes')} rows={2} />}
-        </FormField>
-      </FormGrid>
-    </FormModal>
+          <FormField label="Date" error={errors.entryDate?.message} required>
+            {(props) => (
+              <Input {...props} {...register('entryDate')} type="date" max={todayIso()} />
+            )}
+          </FormField>
+
+          <FormField label="Paid by" full>
+            {() => (
+              <Segmented
+                value={paymentMode}
+                options={PAYMENT_MODES}
+                labels={PAYMENT_MODE_LABELS}
+                onChange={(next) => setValue('paymentMode', next)}
+              />
+            )}
+          </FormField>
+
+          {paymentMode !== 'CASH' ? (
+            <FormField label="UPI / bank reference" error={errors.referenceNo?.message} full>
+              {(props) => (
+                <Input {...props} {...register('referenceNo')} placeholder="Transaction ID" />
+              )}
+            </FormField>
+          ) : null}
+
+          <FormField label="Site" hint="Optional — if the cash is for one site." full>
+            {(props) => (
+              <OptionSelect
+                id={props.id}
+                options={sites.data}
+                value={watch('siteId')}
+                onChange={(value) => setValue('siteId', value)}
+                emptyLabel="Not for a specific site"
+                onAddNew={quickAdd.addNew('site')}
+                addNewLabel="Add new site"
+              />
+            )}
+          </FormField>
+
+          <FormField label="Notes" error={errors.notes?.message} full>
+            {(props) => <Textarea {...props} {...register('notes')} rows={2} />}
+          </FormField>
+        </FormGrid>
+      </FormModal>
+
+      <QuickAddDialogs
+        adding={quickAdd.adding}
+        onClose={quickAdd.close}
+        onAdded={(kind, id) => {
+          if (kind === 'employee') setValue('employeeId', id, { shouldValidate: true });
+          if (kind === 'site') setValue('siteId', id);
+        }}
+      />
+    </>
   );
 };

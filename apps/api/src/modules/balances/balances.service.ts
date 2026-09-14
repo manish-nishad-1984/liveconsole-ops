@@ -115,7 +115,7 @@ export const statement = async (
       date: formatDateOnly(expense.expenseDate),
       documentNo: expense.expenseNo,
       particulars: `${expense.category.name} — ${expense.description}`,
-      site: expense.site.name,
+      site: expense.site?.name ?? null,
       credit: null,
       debit: money(expense.amount),
       sortAt: expense.createdAt.getTime(),

@@ -16,6 +16,8 @@ import { toDtos as expensesToDtos } from '../expenses/expenses.service.js';
  */
 
 const TOP = 6;
+/** Bucket key for expenses booked without a site. */
+const NO_SITE = 'none';
 
 const topByAmount = (
   rows: { key: string | null; amount: Prisma.Decimal | null }[],
@@ -97,7 +99,7 @@ export const getSummary = async (): Promise<DashboardSummaryDto> => {
 
   const [siteNames, categoryNames] = await Promise.all([
     prisma.site.findMany({
-      where: { id: { in: bySite.map((row) => row.siteId) } },
+      where: { id: { in: bySite.flatMap((row) => (row.siteId ? [row.siteId] : [])) } },
       select: { id: true, name: true },
     }),
     prisma.expenseCategory.findMany({
@@ -137,8 +139,9 @@ export const getSummary = async (): Promise<DashboardSummaryDto> => {
     employees: employees.slice(0, 10),
     pendingExpenses: await expensesToDtos(organizationId, pending),
     bySite: topByAmount(
-      bySite.map((row) => ({ key: row.siteId, amount: row._sum.amount })),
-      new Map(siteNames.map((site) => [site.id, site.name])),
+      // Expenses without a site still count, under their own bar.
+      bySite.map((row) => ({ key: row.siteId ?? NO_SITE, amount: row._sum.amount })),
+      new Map([[NO_SITE, 'No site'], ...siteNames.map((site) => [site.id, site.name] as const)]),
     ),
     byCategory: topByAmount(
       byCategory.map((row) => ({

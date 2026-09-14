@@ -79,6 +79,8 @@ export interface UserFormModalProps {
   user: UserDto | null;
   /** Surfaces the generated temporary password to the caller, shown once. */
   onCreatedWithTemporaryPassword?: (loginId: string, password: string) => void;
+  /** Called with the saved user — lets a picker select who was just added. */
+  onSaved?: (saved: UserDto) => void;
 }
 
 export const UserFormModal = ({
@@ -86,6 +88,7 @@ export const UserFormModal = ({
   onOpenChange,
   user,
   onCreatedWithTemporaryPassword,
+  onSaved,
 }: UserFormModalProps) => {
   const queryClient = useQueryClient();
   const isEdit = Boolean(user);
@@ -171,6 +174,7 @@ export const UserFormModal = ({
       });
     },
     onSuccess: (result) => {
+      onSaved?.(result);
       void queryClient.invalidateQueries({ queryKey: queryKeys.users.all });
       void queryClient.invalidateQueries({ queryKey: queryKeys.roles.all });
 

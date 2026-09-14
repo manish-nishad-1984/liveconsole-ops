@@ -74,7 +74,7 @@ export interface ExpenseDto extends AuditFields {
   id: UUID;
   expenseNo: string;
   employee: PersonRef;
-  site: NamedRef;
+  site: NamedRef | null;
   category: NamedRef;
   expenseDate: DateOnlyString;
   amount: MoneyString;
@@ -95,7 +95,7 @@ export interface ExpenseDto extends AuditFields {
 export interface ExpenseRequest {
   /** Only honoured for callers with `expenses:manage`; otherwise the caller. */
   employeeId?: UUID | null;
-  siteId: UUID;
+  siteId?: UUID | null;
   categoryId: UUID;
   expenseDate: DateOnlyString;
   amount: MoneyString | number;

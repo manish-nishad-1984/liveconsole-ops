@@ -160,7 +160,7 @@ const assertNotFuture = (date: string) => {
 
 const assertReferences = async (
   organizationId: string,
-  refs: { employeeId?: string; siteId?: string; categoryId?: string },
+  refs: { employeeId?: string; siteId?: string | null; categoryId?: string },
 ) => {
   if (refs.employeeId && !(await findActiveEmployee(organizationId, refs.employeeId))) {
     throw new BusinessRuleError('The selected employee is not an active user');
@@ -196,7 +196,7 @@ export const create = async (input: ExpenseInput): Promise<ExpenseDto> => {
         organizationId,
         expenseNo,
         employeeId,
-        siteId: input.siteId,
+        siteId: input.siteId ?? null,
         categoryId: input.categoryId,
         expenseDate,
         amount: input.amount,
@@ -215,7 +215,7 @@ export const create = async (input: ExpenseInput): Promise<ExpenseDto> => {
       entityLabel: expenseNo,
       changes: diffRecords(null, {
         employee: createdExpense.employee.fullName,
-        site: createdExpense.site.name,
+        site: createdExpense.site?.name ?? null,
         amount: money(createdExpense.amount),
       }),
       db: tx,
@@ -280,7 +280,7 @@ export const update = async (id: string, input: UpdateExpenseInput): Promise<Exp
   const snapshot = (record: ExpenseRecord) => ({
     ...toDto(record),
     employee: record.employee.fullName,
-    site: record.site.name,
+    site: record.site?.name ?? null,
     category: record.category.name,
     reviewedBy: record.reviewedBy?.fullName ?? null,
   });
@@ -554,7 +554,7 @@ export const exportToCsv = async (query: ExpenseListQueryInput): Promise<string>
       expense.expenseNo,
       formatDateOnly(expense.expenseDate),
       expense.employee.fullName,
-      expense.site.name,
+      expense.site?.name,
       expense.category.name,
       expense.description,
       expense.paidTo,

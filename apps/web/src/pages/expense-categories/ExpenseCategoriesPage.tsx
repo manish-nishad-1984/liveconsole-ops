@@ -1,23 +1,16 @@
-import { zodResolver } from '@hookform/resolvers/zod';
 import type { ExpenseCategoryDto } from '@liveconsole-ops/types';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { ColumnDef } from '@tanstack/react-table';
 import { MoreHorizontal, Pencil, Plus, Tags, Trash2 } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import { z } from 'zod';
 
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { DataTable, type DataTableColumnMeta } from '@/components/common/DataTable';
 import { EmptyState } from '@/components/common/EmptyState';
-import { FormAlert } from '@/components/common/FormAlert';
-import { FormField } from '@/components/common/FormField';
-import { FormGrid, FormModal } from '@/components/common/FormModal';
 import { SearchInput } from '@/components/common/SearchInput';
 import { StatusBadge } from '@/components/common/StatusBadge';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -25,120 +18,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Input } from '@/components/ui/input';
 import { useListQuery } from '@/hooks/use-list-query';
 import { usePermissions } from '@/hooks/use-permissions';
 import { ResourceLayout } from '@/layouts/PageLayout';
 import { queryKeys } from '@/lib/query-client';
+import { CategoryFormModal } from '@/pages/expense-categories/CategoryFormModal';
 import { expenseCategoriesService } from '@/services/masters.service';
-import { applyFieldErrors } from '@/utils/errors';
 
 const meta = (value: DataTableColumnMeta): DataTableColumnMeta => value;
-
-const schema = z.object({
-  name: z.string().trim().min(1, 'Enter a name').max(80),
-  description: z.string().trim().max(300),
-  sortOrder: z.coerce.number().int().min(0, 'Use 0 or more').max(100000),
-  isActive: z.boolean(),
-});
-
-type CategoryForm = z.infer<typeof schema>;
-
-const CategoryFormModal = ({
-  open,
-  onOpenChange,
-  category,
-}: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  category: ExpenseCategoryDto | null;
-}) => {
-  const queryClient = useQueryClient();
-  const [formError, setFormError] = useState<string | null>(null);
-
-  const {
-    register,
-    handleSubmit,
-    reset,
-    setError,
-    setValue,
-    watch,
-    formState: { errors },
-  } = useForm<CategoryForm>({
-    resolver: zodResolver(schema),
-    defaultValues: { name: '', description: '', sortOrder: 0, isActive: true },
-  });
-
-  useEffect(() => {
-    if (!open) return;
-    reset({
-      name: category?.name ?? '',
-      description: category?.description ?? '',
-      sortOrder: category?.sortOrder ?? 0,
-      isActive: category?.isActive ?? true,
-    });
-    setFormError(null);
-  }, [open, category, reset]);
-
-  const mutation = useMutation({
-    mutationFn: (values: CategoryForm) => {
-      const payload = { ...values, description: values.description || null };
-      return category
-        ? expenseCategoriesService.update(category.id, payload)
-        : expenseCategoriesService.create(payload);
-    },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({
-        queryKey: queryKeys.expenseCategories.all,
-      });
-      toast.success(category ? 'Category updated' : 'Category added');
-      onOpenChange(false);
-    },
-    onError: (error) =>
-      setFormError(
-        applyFieldErrors(error, setError, {
-          knownFields: ['name', 'description', 'sortOrder'],
-          fallback: 'Could not save this category.',
-        }),
-      ),
-  });
-
-  return (
-    <FormModal
-      open={open}
-      onOpenChange={onOpenChange}
-      title={category ? `Edit ${category.name}` : 'Add a category'}
-      onSubmit={handleSubmit((values) => mutation.mutate(values))}
-      submitLabel={category ? 'Save changes' : 'Add category'}
-      isSubmitting={mutation.isPending}
-      size="md"
-    >
-      {formError ? <FormAlert tone="error">{formError}</FormAlert> : null}
-      <FormGrid>
-        <FormField label="Name" error={errors.name?.message} required>
-          {(props) => <Input {...props} {...register('name')} autoComplete="off" />}
-        </FormField>
-        <FormField label="Order" error={errors.sortOrder?.message} hint="Lower shows first.">
-          {(props) => (
-            <Input {...props} {...register('sortOrder')} type="number" inputMode="numeric" />
-          )}
-        </FormField>
-        <FormField label="Description" error={errors.description?.message} full>
-          {(props) => <Input {...props} {...register('description')} />}
-        </FormField>
-      </FormGrid>
-      {category ? (
-        <label className="flex items-center gap-2 text-sm">
-          <Checkbox
-            checked={watch('isActive')}
-            onCheckedChange={(checked) => setValue('isActive', checked === true)}
-          />
-          Active — shown when adding expenses
-        </label>
-      ) : null}
-    </FormModal>
-  );
-};
 
 const ExpenseCategoriesPage = () => {
   const queryClient = useQueryClient();

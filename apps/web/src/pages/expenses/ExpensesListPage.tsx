@@ -197,7 +197,8 @@ const ExpensesListPage = () => {
           <div className="min-w-0 max-w-[20rem]">
             <p className="truncate text-sm font-medium">{row.original.description}</p>
             <p className="truncate text-2xs text-muted-foreground">
-              {row.original.site.name} · {row.original.category.name}
+              {row.original.site ? `${row.original.site.name} · ` : ''}
+              {row.original.category.name}
               {row.original.paidTo ? ` · ${row.original.paidTo}` : ''}
             </p>
           </div>
