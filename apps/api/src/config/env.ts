@@ -43,6 +43,10 @@ const envSchema = z.object({
   SEED_ADMIN_PASSWORD: z.string().min(8).default('ChangeMe@123'),
 
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
+
+  /** Receipts and bills. Relative paths resolve from the process working directory. */
+  UPLOAD_DIR: z.string().default('uploads'),
+  MAX_UPLOAD_MB: z.coerce.number().positive().max(25).default(8),
 });
 
 const parsed = envSchema.safeParse(process.env);

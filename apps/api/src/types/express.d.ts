@@ -11,7 +11,7 @@ declare global {
       userId: string;
       /** Tenant the actor belongs to. Every tenant query must be scoped by it. */
       organizationId: string;
-      email: string;
+      email: string | null;
       isSuperAdmin: boolean;
       roles: string[];
       permissions: Set<PermissionKey>;

@@ -3,8 +3,13 @@ import { Router, type Router as ExpressRouter } from 'express';
 import { authenticate } from '../middleware/authenticate.js';
 import { auditRoutes } from '../modules/audit/audit.routes.js';
 import { authRoutes } from '../modules/auth/auth.routes.js';
+import { balancesRoutes } from '../modules/balances/balances.routes.js';
+import { cashBookRoutes } from '../modules/cash-book/cash-book.routes.js';
 import { dashboardRoutes } from '../modules/dashboard/dashboard.routes.js';
+import { expenseCategoriesRoutes } from '../modules/expense-categories/expense-categories.routes.js';
+import { expensesRoutes } from '../modules/expenses/expenses.routes.js';
 import { rolesRoutes } from '../modules/roles/roles.routes.js';
+import { sitesRoutes } from '../modules/sites/sites.routes.js';
 import { usersRoutes } from '../modules/users/users.routes.js';
 import { healthRoutes } from './health.routes.js';
 
@@ -31,7 +36,11 @@ const protectedRoutes: RouteRegistration[] = [
   { path: '/users', router: usersRoutes },
   { path: '/roles', router: rolesRoutes },
   { path: '/audit-logs', router: auditRoutes },
-  // <-- your project's modules go here, one line each.
+  { path: '/expenses', router: expensesRoutes },
+  { path: '/cash-book', router: cashBookRoutes },
+  { path: '/balances', router: balancesRoutes },
+  { path: '/sites', router: sitesRoutes },
+  { path: '/expense-categories', router: expenseCategoriesRoutes },
 ];
 
 export const apiRouter = Router();

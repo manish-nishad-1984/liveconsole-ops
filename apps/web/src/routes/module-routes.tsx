@@ -25,6 +25,13 @@ const DashboardPage = lazy(() => import('@/pages/DashboardPage'));
 const UsersListPage = lazy(() => import('@/pages/users/UsersListPage'));
 const RolesListPage = lazy(() => import('@/pages/roles/RolesListPage'));
 const AuditLogsPage = lazy(() => import('@/pages/audit-logs/AuditLogsPage'));
+const ExpensesListPage = lazy(() => import('@/pages/expenses/ExpensesListPage'));
+const CashBookPage = lazy(() => import('@/pages/cash-book/CashBookPage'));
+const BalancesRoutes = lazy(() => import('@/pages/balances/BalancesRoutes'));
+const SitesListPage = lazy(() => import('@/pages/sites/SitesListPage'));
+const ExpenseCategoriesPage = lazy(
+  () => import('@/pages/expense-categories/ExpenseCategoriesPage'),
+);
 
 /**
  * Implemented module pages. Anything absent falls back to `ModulePlaceholder`,
@@ -36,7 +43,11 @@ const MODULE_PAGES: Partial<Record<ModuleKey, ModulePage>> = {
   users: UsersListPage,
   roles: RolesListPage,
   audit_logs: AuditLogsPage,
-  // <-- your project's page components go here, one line each.
+  expenses: ExpensesListPage,
+  cash_book: CashBookPage,
+  balances: BalancesRoutes,
+  sites: SitesListPage,
+  expense_categories: ExpenseCategoriesPage,
 };
 
 export const moduleRoutes: RouteObject[] = MODULES.map((module) => {

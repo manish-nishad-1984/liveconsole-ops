@@ -31,14 +31,18 @@ export const queryClient = new QueryClient({
     onError: (error, query) => {
       // Only complain about background refetch failures once data is on screen.
       if (query.state.data !== undefined && error instanceof ApiRequestError) {
-        toast.error('Could not refresh this data', { description: error.message });
+        toast.error('Could not refresh this data', {
+          description: error.message,
+        });
       }
     },
   }),
   mutationCache: new MutationCache({
     onError: (error) => {
       if (!(error instanceof ApiRequestError)) {
-        toast.error('Something went wrong', { description: 'Please try again.' });
+        toast.error('Something went wrong', {
+          description: 'Please try again.',
+        });
         return;
       }
       // Field-level validation is rendered inline on the form, not as a toast.
@@ -65,8 +69,8 @@ export const queryKeys = {
     sessions: ['auth', 'sessions'] as const,
   },
   dashboard: {
-    all: ['dashboard'] as const,
-    summary: ['dashboard', 'summary'] as const,
+    all: ['petty-cash', 'dashboard'] as const,
+    summary: ['petty-cash', 'dashboard', 'summary'] as const,
   },
   users: {
     all: ['users'] as const,
@@ -85,5 +89,31 @@ export const queryKeys = {
     all: ['audit-logs'] as const,
     list: (params: object) => ['audit-logs', 'list', params] as const,
     entityTypes: ['audit-logs', 'entity-types'] as const,
+  },
+  sites: {
+    all: ['sites'] as const,
+    list: (params: object) => ['sites', 'list', params] as const,
+    options: ['sites', 'options'] as const,
+  },
+  expenseCategories: {
+    all: ['expense-categories'] as const,
+    list: (params: object) => ['expense-categories', 'list', params] as const,
+    options: ['expense-categories', 'options'] as const,
+  },
+  employees: {
+    options: ['users', 'options'] as const,
+  },
+  /**
+   * Every petty cash write moves a balance, so cash book, expenses, balances and
+   * the dashboard are invalidated together through `pettyCash.all`.
+   */
+  pettyCash: {
+    all: ['petty-cash'] as const,
+    cashBook: (params: object) => ['petty-cash', 'cash-book', params] as const,
+    expenses: (params: object) => ['petty-cash', 'expenses', params] as const,
+    expense: (id: string) => ['petty-cash', 'expense', id] as const,
+    balances: (params: object) => ['petty-cash', 'balances', params] as const,
+    statement: (userId: string, params: object) =>
+      ['petty-cash', 'statement', userId, params] as const,
   },
 } as const;

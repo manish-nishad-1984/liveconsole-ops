@@ -13,9 +13,15 @@ import {
   uuid,
 } from '../../lib/validators.js';
 
-export const createUserSchema = z.object({
+/** Blank from a form means "no email". */
+const optionalEmail = z
+  .union([email, z.literal('')])
+  .transform((value) => (value === '' ? null : value))
+  .nullish();
+
+const userFields = z.object({
   fullName: shortText(120),
-  email,
+  email: optionalEmail,
   phone: z.union([phone, z.literal('')]).nullish(),
   employeeCode: optionalText(30),
   designation: optionalText(80),
@@ -26,7 +32,13 @@ export const createUserSchema = z.object({
   password: password.optional(),
 });
 
-export const updateUserSchema = createUserSchema
+/** Site staff usually have no email, so a mobile number alone is enough to sign in. */
+export const createUserSchema = userFields.refine((data) => Boolean(data.email || data.phone), {
+  message: 'Enter a mobile number or an email address — the user signs in with it',
+  path: ['phone'],
+});
+
+export const updateUserSchema = userFields
   .omit({ password: true })
   .partial()
   .extend({

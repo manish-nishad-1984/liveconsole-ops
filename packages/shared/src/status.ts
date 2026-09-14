@@ -43,11 +43,24 @@ const TONE_RULES: { tone: StatusTone; keywords: string[] }[] = [
   { tone: 'muted', keywords: ['CANCEL', 'ARCHIV', 'CLOSED', 'VOID', 'INACTIVE', 'DELETED'] },
   {
     tone: 'success',
-    keywords: ['ACTIVE', 'APPROVED', 'COMPLETED', 'PAID', 'DONE', 'SUCCESS', 'VERIFIED', 'ENABLED'],
+    keywords: [
+      'ACTIVE',
+      'APPROVED',
+      'COMPLETED',
+      'PAID',
+      'DONE',
+      'SUCCESS',
+      'VERIFIED',
+      'ENABLED',
+      'GIVEN',
+    ],
   },
   { tone: 'warning', keywords: ['WARNING', 'LOCKED', 'HOLD', 'PARTIAL', 'BLOCKED', 'ATTENTION'] },
   { tone: 'progress', keywords: ['IN_PROGRESS', 'PROCESSING', 'RUNNING', 'ONGOING', 'STARTED'] },
-  { tone: 'info', keywords: ['SUBMITTED', 'SENT', 'INVITED', 'SCHEDULED', 'QUEUED', 'REVIEW'] },
+  {
+    tone: 'info',
+    keywords: ['SUBMITTED', 'SENT', 'INVITED', 'SCHEDULED', 'QUEUED', 'REVIEW', 'RETURNED'],
+  },
   { tone: 'neutral', keywords: ['PENDING', 'DRAFT', 'NEW', 'OPEN', 'TODO'] },
 ];
 

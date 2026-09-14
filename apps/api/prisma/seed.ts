@@ -84,6 +84,35 @@ const seedAdmin = async (
   });
 };
 
+const DEFAULT_EXPENSE_CATEGORIES = [
+  'Fuel & Travel',
+  'Food & Tea',
+  'Material Purchase',
+  'Labour Charges',
+  'Local Transport',
+  'Hotel / Stay',
+  'Tools & Hardware',
+  'Miscellaneous',
+];
+
+/**
+ * Starter categories, only for an organisation that has none — once an
+ * administrator has shaped the list, a re-seed must not add these back.
+ */
+const seedExpenseCategories = async (organizationId: string): Promise<number> => {
+  const existing = await prisma.expenseCategory.count({ where: { organizationId } });
+  if (existing > 0) return 0;
+
+  const { count } = await prisma.expenseCategory.createMany({
+    data: DEFAULT_EXPENSE_CATEGORIES.map((name, index) => ({
+      organizationId,
+      name,
+      sortOrder: (index + 1) * 10,
+    })),
+  });
+  return count;
+};
+
 const main = async (): Promise<void> => {
   console.log('Seeding reference data…');
 
@@ -101,6 +130,9 @@ const main = async (): Promise<void> => {
 
   await seedAdmin(organizationId, branchId, superAdminRoleId);
   console.log(`  admin            ${env.SEED_ADMIN_EMAIL}`);
+
+  const categories = await seedExpenseCategories(organizationId);
+  console.log(`  categories       ${categories ? `${categories} added` : 'already present'}`);
 
   console.log('Seed complete.');
 };

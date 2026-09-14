@@ -14,7 +14,7 @@ import type { ModuleKey, PermissionKey } from '@liveconsole-ops/types';
  * framework-agnostic and be imported by the API as well.
  */
 
-export type NavGroupKey = 'general' | 'admin';
+export type NavGroupKey = 'general' | 'petty_cash' | 'masters' | 'admin';
 
 export interface NavGroup {
   key: NavGroupKey;
@@ -25,6 +25,8 @@ export interface NavGroup {
 
 export const NAV_GROUPS: NavGroup[] = [
   { key: 'general', label: 'General', standalone: true },
+  { key: 'petty_cash', label: 'Petty Cash' },
+  { key: 'masters', label: 'Masters' },
   { key: 'admin', label: 'Administration' },
 ];
 
@@ -53,7 +55,62 @@ export const MODULES: ModuleDefinition[] = [
     group: 'general',
     order: 1,
     permission: 'dashboard:view',
-    description: 'Overview of the workspace.',
+    description: 'Cash with employees, pending approvals and this month at a glance.',
+  },
+  {
+    key: 'expenses',
+    label: 'Expenses',
+    singular: 'Expense',
+    path: '/expenses',
+    icon: 'Receipt',
+    group: 'petty_cash',
+    order: 10,
+    permission: 'expenses:view',
+    description: 'Site expenses with receipts, submitted for approval.',
+  },
+  {
+    key: 'cash_book',
+    label: 'Cash Book',
+    singular: 'Cash Entry',
+    path: '/cash-book',
+    icon: 'Wallet',
+    group: 'petty_cash',
+    order: 11,
+    permission: 'cash_book:view',
+    description: 'Cash and UPI handed to employees, and cash returned.',
+  },
+  {
+    key: 'balances',
+    label: 'Balances',
+    singular: 'Balance',
+    path: '/balances',
+    icon: 'Scale',
+    group: 'petty_cash',
+    order: 12,
+    permission: 'balances:view',
+    description: 'What each employee holds, with a running statement.',
+  },
+  {
+    key: 'sites',
+    label: 'Sites',
+    singular: 'Site',
+    path: '/sites',
+    icon: 'MapPin',
+    group: 'masters',
+    order: 50,
+    permission: 'sites:view',
+    description: 'Work sites that expenses and vehicles are booked against.',
+  },
+  {
+    key: 'expense_categories',
+    label: 'Expense Categories',
+    singular: 'Expense Category',
+    path: '/expense-categories',
+    icon: 'Tags',
+    group: 'masters',
+    order: 51,
+    permission: 'expense_categories:view',
+    description: 'What money is spent on — fuel, food, material…',
   },
   {
     key: 'users',

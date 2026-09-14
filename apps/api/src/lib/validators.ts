@@ -68,6 +68,26 @@ export const listQuery = z.object({
 
 export type ListQueryInput = z.infer<typeof listQuery>;
 
+/** A calendar date, "YYYY-MM-DD", that actually exists (no 2026-02-30). */
+export const dateOnly = z
+  .string()
+  .trim()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, 'Enter a date as YYYY-MM-DD')
+  .refine((value) => {
+    const date = new Date(`${value}T00:00:00.000Z`);
+    return !Number.isNaN(date.getTime()) && date.toISOString().startsWith(value);
+  }, 'Enter a valid date');
+
+/**
+ * A positive rupee amount with at most two decimals, kept as a string so it goes
+ * straight into a Prisma `Decimal` without passing through a float.
+ */
+export const amount = z
+  .union([z.string(), z.number()])
+  .transform((value) => String(value).trim())
+  .refine((value) => /^\d{1,10}(\.\d{1,2})?$/.test(value), 'Enter an amount like 1250 or 1250.50')
+  .refine((value) => Number(value) > 0, 'Amount must be more than zero');
+
 /** Coerce a repeated query param into an array (`?status=A&status=B`). */
 export const arrayOf = <T extends z.ZodTypeAny>(schema: T) =>
   z.union([schema, z.array(schema)]).transform((value) => (Array.isArray(value) ? value : [value]));

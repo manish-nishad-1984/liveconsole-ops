@@ -54,7 +54,7 @@ export interface AuthUser {
   id: UUID;
   employeeCode: string | null;
   fullName: string;
-  email: string;
+  email: string | null;
   phone: string | null;
   avatarUrl: string | null;
   designation: string | null;
@@ -121,7 +121,7 @@ export interface SessionDto {
 
 export interface AccessTokenPayload {
   sub: UUID;
-  email: string;
+  email: string | null;
   roles: string[];
   isSuperAdmin: boolean;
   /** Token version — bumped to invalidate every outstanding token for a user. */

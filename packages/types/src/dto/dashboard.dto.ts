@@ -1,30 +1,36 @@
-import type { ISODateString } from '../common.js';
+import type { BalanceRowDto, ExpenseDto, MoneyString } from './petty-cash.dto.js';
+
+export interface AmountByName {
+  id: string;
+  name: string;
+  amount: MoneyString;
+}
 
 /**
- * The starter dashboard reports on the only thing a boilerplate actually knows
- * about: who has access. Replace this DTO with your domain's own summary the
- * moment there is one.
+ * The petty cash dashboard. `scope` says whose numbers these are: an administrator
+ * sees the whole company (`all`), an employee sees only their own (`own`).
  */
 export interface DashboardSummaryDto {
-  users: {
-    total: number;
-    active: number;
-    invited: number;
-    suspended: number;
+  scope: 'all' | 'own';
+  totals: {
+    cashGiven: MoneyString;
+    cashReturned: MoneyString;
+    approvedExpenses: MoneyString;
+    pendingExpenses: MoneyString;
+    pendingCount: number;
+    /** Cash currently with employees (own: with me). */
+    balance: MoneyString;
   };
-  roles: {
-    total: number;
-    system: number;
-    custom: number;
+  thisMonth: {
+    cashGiven: MoneyString;
+    approvedExpenses: MoneyString;
+    submittedExpenses: MoneyString;
   };
-  activity: {
-    /** Audit entries written in the last 24 hours. */
-    last24h: number;
-    lastSignInAt: ISODateString | null;
-  };
-  organization: {
-    name: string;
-    code: string;
-    createdAt: ISODateString;
-  } | null;
+  /** Employees by balance, largest first. Empty for `own`. */
+  employees: BalanceRowDto[];
+  /** Latest expenses still waiting for approval. */
+  pendingExpenses: ExpenseDto[];
+  /** Approved + pending spend this month. */
+  bySite: AmountByName[];
+  byCategory: AmountByName[];
 }

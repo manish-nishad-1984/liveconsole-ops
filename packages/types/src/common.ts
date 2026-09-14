@@ -94,7 +94,7 @@ export interface AuditFields {
 export interface UserRef {
   id: UUID;
   fullName: string;
-  email: string;
+  email: string | null;
   avatarUrl: string | null;
 }
 

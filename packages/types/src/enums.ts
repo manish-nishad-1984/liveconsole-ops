@@ -21,7 +21,19 @@ export const AUDIT_ACTIONS = [
   'PASSWORD_RESET',
   'PERMISSION_CHANGE',
   'STATUS_CHANGE',
+  'APPROVE',
+  'REJECT',
   'EXPORT',
   'IMPORT',
 ] as const;
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
+
+export const PAYMENT_MODES = ['CASH', 'UPI', 'BANK'] as const;
+export type PaymentMode = (typeof PAYMENT_MODES)[number];
+
+/** GIVEN: cash handed to an employee. RETURNED: unspent cash handed back. */
+export const CASH_ENTRY_TYPES = ['GIVEN', 'RETURNED'] as const;
+export type CashEntryType = (typeof CASH_ENTRY_TYPES)[number];
+
+export const EXPENSE_STATUSES = ['PENDING', 'APPROVED', 'REJECTED'] as const;
+export type ExpenseStatus = (typeof EXPENSE_STATUSES)[number];

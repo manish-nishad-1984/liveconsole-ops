@@ -161,7 +161,7 @@ const ProfilePage = () => {
             <UserAvatar name={user.fullName} src={user.avatarUrl} className="size-12" />
             <div className="min-w-0">
               <p className="truncate text-sm font-semibold">{user.fullName}</p>
-              <p className="truncate text-xs text-muted-foreground">{user.email}</p>
+              <p className="truncate text-xs text-muted-foreground">{user.email ?? user.phone}</p>
             </div>
           </div>
 
@@ -183,7 +183,7 @@ const ProfilePage = () => {
             </FormField>
 
             <FormField label="Email">
-              {(props) => <Input {...props} value={user.email} disabled />}
+              {(props) => <Input {...props} value={user.email ?? 'Not set'} disabled />}
             </FormField>
 
             <div className="flex justify-end pt-2">

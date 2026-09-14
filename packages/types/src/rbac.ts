@@ -34,7 +34,16 @@ export const MODULE_PERMISSIONS = {
   audit_logs: ['view', 'export'],
   notifications: ['view', 'manage'],
   company_settings: ['view', 'update', 'manage'],
-  // <-- your project adds its real modules here, one line each, as they are built.
+
+  // Petty cash. On these modules `manage` means "every employee's records";
+  // without it a user sees and acts on their own records only.
+  expenses: [...CRUD, 'approve', 'export', 'manage'],
+  cash_book: [...CRUD, 'export', 'manage'],
+  balances: ['view', 'export', 'manage'],
+
+  // Masters
+  sites: [...CRUD],
+  expense_categories: [...CRUD],
 } as const satisfies Record<string, readonly ActionKey[]>;
 
 export type ModuleKey = keyof typeof MODULE_PERMISSIONS;
@@ -55,7 +64,7 @@ export const permissionKey = <M extends ModuleKey>(
   action: (typeof MODULE_PERMISSIONS)[M][number],
 ): PermissionKey => `${moduleKey}:${action}` as PermissionKey;
 
-export const SYSTEM_ROLES = ['super_admin', 'admin', 'viewer'] as const;
+export const SYSTEM_ROLES = ['super_admin', 'admin', 'employee', 'viewer'] as const;
 export type SystemRoleSlug = (typeof SYSTEM_ROLES)[number];
 
 /** One module's slice of the permission matrix, as the role editor renders it. */

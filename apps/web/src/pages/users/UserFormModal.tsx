@@ -40,23 +40,35 @@ import { applyFieldErrors } from '@/utils/errors';
 
 const NO_BRANCH = '__none__';
 
-const schema = z.object({
-  fullName: z.string().trim().min(1, 'Enter a name').max(120),
-  email: z.string().trim().min(1, 'Enter an email address').email('Enter a valid email address'),
-  phone: z.string().trim().max(20),
-  employeeCode: z.string().trim().max(30),
-  designation: z.string().trim().max(80),
-  branchId: z.string(),
-  roleIds: z.array(z.string()).min(1, 'Assign at least one role'),
-  // Blank means "invite them"; anything else must clear the same policy the API
-  // enforces, so the form cannot offer a password the server will reject.
-  password: z
-    .string()
-    .refine(
-      (value) => value === '' || meetsPasswordPolicy(value),
-      'Password does not meet the requirements',
-    ),
-});
+const schema = z
+  .object({
+    fullName: z.string().trim().min(1, 'Enter a name').max(120),
+    email: z.union([z.literal(''), z.string().trim().email('Enter a valid email address')]),
+    phone: z
+      .string()
+      .trim()
+      .refine(
+        (value) => value === '' || /^[6-9]\d{9}$/.test(value),
+        'Enter a 10-digit mobile number',
+      ),
+    employeeCode: z.string().trim().max(30),
+    designation: z.string().trim().max(80),
+    branchId: z.string(),
+    roleIds: z.array(z.string()).min(1, 'Assign at least one role'),
+    // Blank means "invite them"; anything else must clear the same policy the API
+    // enforces, so the form cannot offer a password the server will reject.
+    password: z
+      .string()
+      .refine(
+        (value) => value === '' || meetsPasswordPolicy(value),
+        'Password does not meet the requirements',
+      ),
+  })
+  // Site staff often have no email: a mobile number alone is enough to sign in.
+  .refine((values) => Boolean(values.email || values.phone), {
+    message: 'Enter a mobile number or an email — the user signs in with it',
+    path: ['phone'],
+  });
 
 type UserForm = z.infer<typeof schema>;
 
@@ -66,7 +78,7 @@ export interface UserFormModalProps {
   /** Null for a create. */
   user: UserDto | null;
   /** Surfaces the generated temporary password to the caller, shown once. */
-  onCreatedWithTemporaryPassword?: (email: string, password: string) => void;
+  onCreatedWithTemporaryPassword?: (loginId: string, password: string) => void;
 }
 
 export const UserFormModal = ({
@@ -97,6 +109,7 @@ export const UserFormModal = ({
     setError,
     reset,
     setValue,
+    getValues,
     watch,
     formState: { errors, isSubmitting },
   } = useForm<UserForm>({
@@ -130,11 +143,19 @@ export const UserFormModal = ({
     setFormError(null);
   }, [open, user, reset]);
 
+  // Most new accounts are site staff, so a new user starts with the Employee role.
+  const employeeRoleId = roles.data?.items.find((role) => role.slug === 'employee')?.id;
+  useEffect(() => {
+    if (open && !user && employeeRoleId && getValues('roleIds').length === 0) {
+      setValue('roleIds', [employeeRoleId]);
+    }
+  }, [open, user, employeeRoleId, getValues, setValue]);
+
   const mutation = useMutation({
     mutationFn: async (values: UserForm) => {
       const payload = {
         fullName: values.fullName,
-        email: values.email,
+        email: values.email || null,
         phone: values.phone || null,
         employeeCode: values.employeeCode || null,
         designation: values.designation || null,
@@ -157,7 +178,10 @@ export const UserFormModal = ({
         'temporaryPassword' in result ? (result.temporaryPassword as string | null) : null;
 
       if (!isEdit && temporaryPassword) {
-        onCreatedWithTemporaryPassword?.(result.email, temporaryPassword);
+        onCreatedWithTemporaryPassword?.(
+          result.phone ?? result.email ?? result.fullName,
+          temporaryPassword,
+        );
       } else {
         toast.success(isEdit ? 'User updated' : 'User created');
       }
@@ -208,18 +232,18 @@ export const UserFormModal = ({
           {(props) => <Input {...props} {...register('fullName')} autoComplete="off" />}
         </FormField>
 
-        <FormField label="Email" error={errors.email?.message} required>
-          {(props) => (
-            <Input {...props} {...register('email')} type="email" autoComplete="off" />
-          )}
-        </FormField>
-
         <FormField
           label="Mobile"
           error={errors.phone?.message}
-          hint="Doubles as a sign-in identifier."
+          hint="The user signs in with this number."
         >
-          {(props) => <Input {...props} {...register('phone')} inputMode="tel" />}
+          {(props) => <Input {...props} {...register('phone')} inputMode="tel" maxLength={10} />}
+        </FormField>
+
+        <FormField label="Email" error={errors.email?.message} hint="Optional.">
+          {(props) => (
+            <Input {...props} {...register('email')} type="email" autoComplete="off" />
+          )}
         </FormField>
 
         <FormField label="Employee code" error={errors.employeeCode?.message}>

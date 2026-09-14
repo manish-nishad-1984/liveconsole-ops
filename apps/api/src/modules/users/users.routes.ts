@@ -33,6 +33,9 @@ usersRoutes.get('/assignable', asyncHandler(controller.listAssignable));
 /** Branch list for the user form's picker; same reasoning as `/assignable`. */
 usersRoutes.get('/branches', asyncHandler(controller.listBranches));
 
+/** Employee picker for cash entries, expenses and filters; same reasoning. */
+usersRoutes.get('/options', asyncHandler(controller.listOptions));
+
 usersRoutes.get(
   '/export',
   requirePermission('users:export'),

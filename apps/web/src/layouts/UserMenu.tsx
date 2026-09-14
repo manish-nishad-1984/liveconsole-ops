@@ -53,7 +53,7 @@ export const UserMenu = () => {
       <DropdownMenuContent className="w-60">
         <div className="px-2 py-1.5">
           <p className="truncate text-sm font-medium">{user.fullName}</p>
-          <p className="truncate text-2xs text-muted-foreground">{user.email}</p>
+          <p className="truncate text-2xs text-muted-foreground">{user.email ?? user.phone}</p>
         </div>
         <DropdownMenuSeparator />
 

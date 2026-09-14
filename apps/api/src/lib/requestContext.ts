@@ -69,7 +69,7 @@ export const actorCan = (permission: PermissionKey): boolean => {
 /** Called by the auth middleware once the token has been verified. */
 export const setContextActor = (
   actorId: string,
-  actorEmail: string,
+  actorEmail: string | null,
   organizationId: string,
   permissions: ReadonlySet<PermissionKey> = new Set(),
   isSuperAdmin = false,

@@ -98,7 +98,7 @@ const UsersListPage = () => {
     mutationFn: (id: string) => usersService.setPassword(id, { mustChangePassword: true }),
     onSuccess: (result) => {
       void invalidate();
-      const email = confirmReset?.email ?? '';
+      const email = confirmReset?.phone ?? confirmReset?.email ?? '';
       setConfirmReset(null);
       if (result.temporaryPassword) {
         setRevealed({ email, password: result.temporaryPassword });
@@ -141,8 +141,10 @@ const UsersListPage = () => {
         meta: meta({ sortKey: 'email' }),
         cell: ({ row }) => (
           <div className="min-w-0">
-            <p className="truncate text-xs">{row.original.email}</p>
-            <p className="truncate text-2xs text-muted-foreground">{row.original.phone ?? '—'}</p>
+            <p className="truncate text-xs">{row.original.phone ?? '—'}</p>
+            <p className="truncate text-2xs text-muted-foreground">
+              {row.original.email ?? 'No email'}
+            </p>
           </div>
         ),
       },
@@ -310,7 +312,7 @@ const UsersListPage = () => {
             <SearchInput
               value={list.search}
               onChange={list.setSearch}
-              placeholder="Search name, email, code…"
+              placeholder="Search name, mobile, email…"
               className="w-full max-w-xs"
             />
             <Select

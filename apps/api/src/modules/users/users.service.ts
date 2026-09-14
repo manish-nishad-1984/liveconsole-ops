@@ -1,4 +1,10 @@
-import type { BranchRef, Paginated, SetUserPasswordResponse, UserDto } from '@liveconsole-ops/types';
+import type {
+  BranchRef,
+  OptionDto,
+  Paginated,
+  SetUserPasswordResponse,
+  UserDto,
+} from '@liveconsole-ops/types';
 
 import { BusinessRuleError, ConflictError, NotFoundError } from '../../lib/errors.js';
 import { buildPaginationMeta } from '../../lib/pagination.js';
@@ -18,8 +24,9 @@ import type {
 
 /**
  * User administration. The rules enforced here:
- *  • Email and employee code are unique, checked before the write so the caller
- *    gets a field-level error rather than a raw constraint violation.
+ *  • Email, mobile and employee code are unique, checked before the write so the
+ *    caller gets a clear error rather than a raw constraint violation.
+ *  • A user needs a mobile number or an email — it is what they sign in with.
  *  • Every user carries at least one role.
  *  • The last active super admin cannot be suspended, disabled or deleted.
  *  • Losing access takes effect *now*: suspending, disabling, deleting or having
@@ -82,8 +89,11 @@ export const create = async (
 ): Promise<UserDto & { temporaryPassword: string | null }> => {
   const organizationId = requireOrg();
 
-  if (await repository.findUserByEmail(input.email)) {
+  if (input.email && (await repository.findUserByEmail(input.email))) {
     throw new ConflictError('A user with this email already exists');
+  }
+  if (input.phone && (await repository.findLiveUserByMobile(input.phone))) {
+    throw new ConflictError('A user with this mobile number already exists');
   }
   if (
     input.employeeCode &&
@@ -104,7 +114,7 @@ export const create = async (
       {
         organization: { connect: { id: organizationId } },
         fullName: input.fullName,
-        email: input.email,
+        email: input.email ?? null,
         mobile: input.phone || null,
         employeeCode: input.employeeCode ?? null,
         designation: input.designation ?? null,
@@ -123,7 +133,7 @@ export const create = async (
       action: 'CREATE',
       entityType: 'User',
       entityId: createdUser.id,
-      entityLabel: createdUser.email,
+      entityLabel: createdUser.email ?? createdUser.mobile ?? createdUser.fullName,
       changes: diffRecords(null, {
         fullName: createdUser.fullName,
         email: createdUser.email,
@@ -149,6 +159,21 @@ export const update = async (id: string, input: UpdateUserInput): Promise<UserDt
   if (input.email && input.email !== existing.email) {
     const clash = await repository.findUserByEmail(input.email);
     if (clash && clash.id !== id) throw new ConflictError('A user with this email already exists');
+  }
+
+  if (input.phone && input.phone !== existing.mobile) {
+    const clash = await repository.findLiveUserByMobile(input.phone);
+    if (clash && clash.id !== id) {
+      throw new ConflictError('A user with this mobile number already exists');
+    }
+  }
+
+  const finalEmail = input.email !== undefined ? input.email : existing.email;
+  const finalMobile = input.phone !== undefined ? input.phone || null : existing.mobile;
+  if (!finalEmail && !finalMobile) {
+    throw new BusinessRuleError(
+      'Keep a mobile number or an email address — the user signs in with it',
+    );
   }
 
   if (input.employeeCode && input.employeeCode !== existing.employeeCode) {
@@ -217,7 +242,7 @@ export const update = async (id: string, input: UpdateUserInput): Promise<UserDt
           : 'UPDATE',
       entityType: 'User',
       entityId: id,
-      entityLabel: updated.email,
+      entityLabel: updated.email ?? updated.mobile ?? updated.fullName,
       changes: diffRecords(
         { ...existing, roles: existing.roles.map(({ role }) => role.slug) },
         { ...updated, roles: updated.roles.map(({ role }) => role.slug) },
@@ -268,7 +293,7 @@ export const setStatus = async (id: string, input: SetStatusInput): Promise<User
       action: 'STATUS_CHANGE',
       entityType: 'User',
       entityId: id,
-      entityLabel: updated.email,
+      entityLabel: updated.email ?? updated.mobile ?? updated.fullName,
       changes: { status: { from: existing.status, to: updated.status } },
       db: tx,
     });
@@ -308,7 +333,7 @@ export const setPassword = async (
     action: 'PASSWORD_RESET',
     entityType: 'User',
     entityId: id,
-    entityLabel: existing.email,
+    entityLabel: existing.email ?? existing.mobile ?? existing.fullName,
   });
 
   // Shown once in the confirmation dialog and then gone.
@@ -338,7 +363,7 @@ export const remove = async (id: string): Promise<UserDto> => {
     action: 'DELETE',
     entityType: 'User',
     entityId: id,
-    entityLabel: user.email,
+    entityLabel: user.email ?? user.mobile ?? user.fullName,
     changes: { isActive: { from: true, to: false } },
   });
 
@@ -350,6 +375,15 @@ export const listAssignable = (search?: string) =>
 
 export const listBranches = async (): Promise<BranchRef[]> =>
   repository.listBranches(requireOrg());
+
+export const listOptions = async (): Promise<OptionDto[]> => {
+  const users = await repository.listUserOptions(requireOrg());
+  return users.map((user) => ({
+    id: user.id,
+    name: user.fullName,
+    hint: [user.designation, user.mobile].filter(Boolean).join(' · ') || null,
+  }));
+};
 
 /* ------------------------------------------------------------------ */
 /* Export                                                              */

@@ -11,7 +11,7 @@ export interface UserDto extends AuditFields {
   id: UUID;
   employeeCode: string | null;
   fullName: string;
-  email: string;
+  email: string | null;
   phone: string | null;
   avatarUrl: string | null;
   designation: string | null;
@@ -27,9 +27,10 @@ export interface UserDto extends AuditFields {
   roles: UserRoleRef[];
 }
 
+/** Email or mobile is required — one of them is what the person signs in with. */
 export interface CreateUserRequest {
   fullName: string;
-  email: string;
+  email?: string | null;
   phone?: string | null;
   employeeCode?: string | null;
   designation?: string | null;

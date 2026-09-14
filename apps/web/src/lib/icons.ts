@@ -6,10 +6,15 @@ import {
   History,
   LayoutDashboard,
   LayoutGrid,
+  MapPin,
+  Receipt,
+  Scale,
   Settings,
   ShieldCheck,
+  Tags,
   UserCog,
   Users,
+  Wallet,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -30,10 +35,15 @@ const ICONS: Record<string, LucideIcon> = {
   History,
   LayoutDashboard,
   LayoutGrid,
+  MapPin,
+  Receipt,
+  Scale,
   Settings,
   ShieldCheck,
+  Tags,
   UserCog,
   Users,
+  Wallet,
 };
 
 /** Falls back to a neutral glyph so an unmapped name never crashes the sidebar. */

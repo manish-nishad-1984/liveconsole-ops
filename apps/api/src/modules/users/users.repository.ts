@@ -85,6 +85,27 @@ export const findUserById = (organizationId: string, id: string) =>
 export const findUserByEmail = (emailAddress: string) =>
   prisma.user.findUnique({ where: { email: emailAddress }, select: { id: true, email: true } });
 
+/**
+ * Mobile is a sign-in identifier, so it must point at one live account across the
+ * platform. Deleted accounts are ignored — a departed employee's number can be
+ * given to someone new.
+ */
+export const findLiveUserByMobile = (mobile: string) =>
+  prisma.user.findFirst({ where: { mobile, deletedAt: null }, select: { id: true } });
+
+/** Every active person, for employee pickers — a company this size fits in one list. */
+export const listUserOptions = (organizationId: string) =>
+  prisma.user.findMany({
+    where: {
+      organizationId,
+      isActive: true,
+      deletedAt: null,
+      status: { in: ['ACTIVE', 'INVITED'] },
+    },
+    select: { id: true, fullName: true, mobile: true, designation: true },
+    orderBy: { fullName: 'asc' },
+  });
+
 /** Employee codes are unique per organisation, not globally. */
 export const findUserByEmployeeCode = (organizationId: string, employeeCode: string) =>
   prisma.user.findUnique({

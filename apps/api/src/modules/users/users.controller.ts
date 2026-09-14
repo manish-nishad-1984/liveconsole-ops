@@ -44,6 +44,9 @@ export const listAssignable = async (req: Request, res: Response): Promise<Respo
 export const listBranches = async (_req: Request, res: Response): Promise<Response> =>
   ok(res, await usersService.listBranches());
 
+export const listOptions = async (_req: Request, res: Response): Promise<Response> =>
+  ok(res, await usersService.listOptions());
+
 export const exportCsv = async (req: Request, res: Response): Promise<void> => {
   const csv = await usersService.exportToCsv(req.query as unknown as UserListQueryInput);
 

@@ -50,7 +50,11 @@ const RESET_TOKEN_TTL_MINUTES = 30;
  * appear. Permissions are deliberately left empty: this identifies who the
  * request concerns, it does not grant anything.
  */
-const attributeTo = (account: { id: string; email: string; organizationId: string }): void => {
+const attributeTo = (account: {
+  id: string;
+  email: string | null;
+  organizationId: string;
+}): void => {
   setContextActor(account.id, account.email, account.organizationId);
 };
 
@@ -114,7 +118,7 @@ interface IssueTokensOptions {
 }
 
 const issueTokens = async (
-  user: { id: string; email: string; tokenVersion: number; isSuperAdmin: boolean },
+  user: { id: string; email: string | null; tokenVersion: number; isSuperAdmin: boolean },
   roles: string[],
   options: IssueTokensOptions,
 ): Promise<TokenPair> => {

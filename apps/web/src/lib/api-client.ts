@@ -232,7 +232,10 @@ export const api = {
     const headers: Record<string, string> = {};
     if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
 
-    let response = await fetch(buildUrl(path, params), { headers, credentials: 'include' });
+    let response = await fetch(buildUrl(path, params), {
+      headers,
+      credentials: 'include',
+    });
 
     if (response.status === 401) {
       const refreshed = await refreshAccessToken();
@@ -252,5 +255,42 @@ export const api = {
     const match = disposition ? /filename="?([^";]+)"?/.exec(disposition) : null;
 
     return { blob: await response.blob(), fileName: match?.[1] ?? null };
+  },
+
+  /**
+   * Multipart upload of one file. The browser sets the multipart boundary itself,
+   * so no Content-Type header is sent. Retries once through a token refresh, like
+   * every other request.
+   */
+  upload: async <T>(path: string, file: Blob, fileName: string, field = 'file'): Promise<T> => {
+    const send = (token: string | null) => {
+      const form = new FormData();
+      form.append(field, file, fileName);
+      return fetch(buildUrl(path), {
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        credentials: 'include',
+        body: form,
+      });
+    };
+
+    let response = await send(accessToken);
+
+    if (response.status === 401) {
+      const refreshed = await refreshAccessToken();
+      if (!refreshed) {
+        onSessionExpired?.();
+        throw new ApiRequestError(401, 'UNAUTHENTICATED', 'Your session has ended.');
+      }
+      response = await send(refreshed);
+    }
+
+    if (!response.ok) throw await parseError(response);
+
+    const payload = (await response.json()) as ApiResponse<T>;
+    if (!payload.success) {
+      throw new ApiRequestError(response.status, payload.error.code, payload.error.message);
+    }
+    return payload.data;
   },
 };
