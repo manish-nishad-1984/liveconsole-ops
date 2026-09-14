@@ -3,11 +3,12 @@ import type { Prisma } from '@prisma/client';
 
 import { ZERO, money, monthStartInIndia, parseDateOnly, toDecimal } from '../../lib/money.js';
 import { prisma } from '../../lib/prisma.js';
-import { requireOrg } from '../../lib/requestContext.js';
+import { actorCan, requireOrg } from '../../lib/requestContext.js';
 import { computeTotals, employeeScope } from '../../services/ledger.service.js';
 import * as balancesService from '../balances/balances.service.js';
 import { expenseSelect } from '../expenses/expenses.repository.js';
 import { toDtos as expensesToDtos } from '../expenses/expenses.service.js';
+import * as vehicleRentalsService from '../vehicle-rentals/vehicle-rentals.service.js';
 
 /**
  * The petty cash dashboard. An administrator sees the company; an employee sees
@@ -56,6 +57,7 @@ export const getSummary = async (): Promise<DashboardSummaryDto> => {
     bySite,
     byCategory,
     employees,
+    transport,
   ] = await Promise.all([
     computeTotals(organizationId, ownOnly ? { employeeIds: [ownOnly] } : {}),
     prisma.cashEntry.aggregate({
@@ -95,6 +97,7 @@ export const getSummary = async (): Promise<DashboardSummaryDto> => {
       _sum: { amount: true },
     }),
     ownOnly ? Promise.resolve([]) : balancesService.list({}),
+    actorCan('transport:view') ? vehicleRentalsService.dashboardSummary() : Promise.resolve(null),
   ]);
 
   const [siteNames, categoryNames] = await Promise.all([
@@ -150,5 +153,6 @@ export const getSummary = async (): Promise<DashboardSummaryDto> => {
       })),
       new Map(categoryNames.map((category) => [category.id, category.name])),
     ),
+    transport,
   };
 };

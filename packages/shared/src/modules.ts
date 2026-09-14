@@ -14,7 +14,7 @@ import type { ModuleKey, PermissionKey } from '@liveconsole-ops/types';
  * framework-agnostic and be imported by the API as well.
  */
 
-export type NavGroupKey = 'general' | 'petty_cash' | 'masters' | 'admin';
+export type NavGroupKey = 'general' | 'petty_cash' | 'transport' | 'masters' | 'admin';
 
 export interface NavGroup {
   key: NavGroupKey;
@@ -26,6 +26,7 @@ export interface NavGroup {
 export const NAV_GROUPS: NavGroup[] = [
   { key: 'general', label: 'General', standalone: true },
   { key: 'petty_cash', label: 'Petty Cash' },
+  { key: 'transport', label: 'Transport' },
   { key: 'masters', label: 'Masters' },
   { key: 'admin', label: 'Administration' },
 ];
@@ -89,6 +90,17 @@ export const MODULES: ModuleDefinition[] = [
     order: 12,
     permission: 'balances:view',
     description: 'What each employee holds, with a running statement.',
+  },
+  {
+    key: 'transport',
+    label: 'Vehicle Rentals',
+    singular: 'Vehicle Rental',
+    path: '/vehicle-rentals',
+    icon: 'Truck',
+    group: 'transport',
+    order: 20,
+    permission: 'transport:view',
+    description: 'Vehicles hired for sites — rent, payments and what is still due.',
   },
   {
     key: 'sites',

@@ -48,6 +48,8 @@ import type {
  *  • `expenses:manage` may edit or delete anyone's expense that is not APPROVED.
  *  • An APPROVED expense is locked. To correct one, an approver reopens it first,
  *    which puts it back to PENDING and takes it out of the balance.
+ *  • An expense created by a petty cash vehicle rent payment belongs to that
+ *    payment: it is reviewed here, but edited and deleted only through Transport.
  */
 
 const DOCUMENT_PREFIX = 'EX';
@@ -80,12 +82,27 @@ const toDto = (expense: ExpenseRecord, attachmentCount = 0): ExpenseDto => ({
   reviewedAt: expense.reviewedAt?.toISOString() ?? null,
   reviewNote: expense.reviewNote,
   attachmentCount,
-  canEdit: isEditable(expense, 'update'),
+  canEdit: !expense.rentPayment && isEditable(expense, 'update'),
+  rentPayment: expense.rentPayment
+    ? {
+        id: expense.rentPayment.id,
+        rentalId: expense.rentPayment.rentalId,
+        rentalNo: expense.rentPayment.rental.rentalNo,
+      }
+    : null,
   createdAt: expense.createdAt.toISOString(),
   updatedAt: expense.updatedAt.toISOString(),
   createdById: expense.createdById,
   updatedById: expense.updatedById,
 });
+
+const assertNotFromRentPayment = (expense: ExpenseRecord) => {
+  if (expense.rentPayment) {
+    throw new BusinessRuleError(
+      `This expense is a vehicle rent payment on ${expense.rentPayment.rental.rentalNo} — change it under Vehicle Rentals`,
+    );
+  }
+};
 
 const toAttachmentDto = (attachment: AttachmentRecord): AttachmentDto => ({
   id: attachment.id,
@@ -230,6 +247,7 @@ export const create = async (input: ExpenseInput): Promise<ExpenseDto> => {
 export const update = async (id: string, input: UpdateExpenseInput): Promise<ExpenseDto> => {
   const organizationId = requireOrg();
   const existing = await loadVisible(organizationId, id);
+  assertNotFromRentPayment(existing);
 
   if (existing.status === 'APPROVED') {
     throw new BusinessRuleError(
@@ -301,6 +319,7 @@ export const update = async (id: string, input: UpdateExpenseInput): Promise<Exp
 export const remove = async (id: string): Promise<ExpenseDto> => {
   const organizationId = requireOrg();
   const existing = await loadVisible(organizationId, id);
+  assertNotFromRentPayment(existing);
 
   if (existing.status === 'APPROVED') {
     throw new BusinessRuleError(

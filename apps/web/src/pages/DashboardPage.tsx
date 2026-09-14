@@ -1,8 +1,17 @@
 import { formatCurrency, formatNumber } from '@liveconsole-ops/shared';
 import type { AmountByName, ExpenseDto } from '@liveconsole-ops/types';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowRight, CalendarDays, Clock, Plus, Receipt, Wallet } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import {
+  AlertCircle,
+  ArrowRight,
+  CalendarDays,
+  Clock,
+  Plus,
+  Receipt,
+  Truck,
+  Wallet,
+} from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
 
 import { ErrorState } from '@/components/common/ErrorState';
 import { LoadingState } from '@/components/common/LoadingState';
@@ -102,6 +111,7 @@ const PendingList = ({
 const DashboardPage = () => {
   const user = useAuthStore((state) => state.user);
   const { can } = usePermissions();
+  const navigate = useNavigate();
 
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: queryKeys.dashboard.summary,
@@ -166,6 +176,26 @@ const DashboardPage = () => {
               hint={`${formatCurrency(data.thisMonth.approvedExpenses)} approved`}
             />
           </div>
+
+          {data.transport ? (
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <StatTile
+                icon={Truck}
+                label="Vehicles on rent"
+                value={formatNumber(data.transport.onRent)}
+                hint={isCompany ? 'Across all sites' : 'In your charge'}
+                onClick={() => navigate('/vehicle-rentals?rentalStatus=ON_RENT')}
+              />
+              <StatTile
+                icon={AlertCircle}
+                tone={Number(data.transport.pending) > 0 ? 'danger' : 'default'}
+                label="Vehicle rent to pay"
+                value={formatCurrency(data.transport.pending)}
+                hint="Rent due minus payments"
+                onClick={() => navigate('/vehicle-rentals?paymentStatus=PENDING')}
+              />
+            </div>
+          ) : null}
 
           <div className="grid gap-5 lg:grid-cols-2">
             {isCompany ? (

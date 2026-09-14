@@ -41,6 +41,9 @@ export const MODULE_PERMISSIONS = {
   cash_book: [...CRUD, 'export', 'manage'],
   balances: ['view', 'export', 'manage'],
 
+  // Transport. `manage` = every employee's rentals; otherwise the ones they are in charge of.
+  transport: [...CRUD, 'export', 'manage'],
+
   // Masters
   sites: [...CRUD],
   expense_categories: [...CRUD],

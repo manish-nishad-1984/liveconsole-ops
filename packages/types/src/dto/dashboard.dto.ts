@@ -33,4 +33,6 @@ export interface DashboardSummaryDto {
   /** Approved + pending spend this month. */
   bySite: AmountByName[];
   byCategory: AmountByName[];
+  /** Vehicles on rent and rent still to pay. Null without `transport:view`. */
+  transport: { onRent: number; pending: MoneyString } | null;
 }

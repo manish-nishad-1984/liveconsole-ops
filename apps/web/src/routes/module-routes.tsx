@@ -28,6 +28,7 @@ const AuditLogsPage = lazy(() => import('@/pages/audit-logs/AuditLogsPage'));
 const ExpensesListPage = lazy(() => import('@/pages/expenses/ExpensesListPage'));
 const CashBookPage = lazy(() => import('@/pages/cash-book/CashBookPage'));
 const BalancesRoutes = lazy(() => import('@/pages/balances/BalancesRoutes'));
+const VehicleRentalsPage = lazy(() => import('@/pages/vehicle-rentals/VehicleRentalsPage'));
 const SitesListPage = lazy(() => import('@/pages/sites/SitesListPage'));
 const ExpenseCategoriesPage = lazy(
   () => import('@/pages/expense-categories/ExpenseCategoriesPage'),
@@ -46,6 +47,7 @@ const MODULE_PAGES: Partial<Record<ModuleKey, ModulePage>> = {
   expenses: ExpensesListPage,
   cash_book: CashBookPage,
   balances: BalancesRoutes,
+  transport: VehicleRentalsPage,
   sites: SitesListPage,
   expense_categories: ExpenseCategoriesPage,
 };

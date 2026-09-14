@@ -116,4 +116,15 @@ export const queryKeys = {
     statement: (userId: string, params: object) =>
       ['petty-cash', 'statement', userId, params] as const,
   },
+  /**
+   * Vehicle rentals sit under the petty cash prefix on purpose: a rent payment
+   * from petty cash is an expense, so reviewing that expense changes what a rental
+   * shows as paid, and recording a payment changes balances and the dashboard.
+   */
+  transport: {
+    all: ['petty-cash', 'vehicle-rentals'] as const,
+    list: (params: object) => ['petty-cash', 'vehicle-rentals', 'list', params] as const,
+    detail: (id: string) => ['petty-cash', 'vehicle-rentals', 'detail', id] as const,
+    suggestions: ['petty-cash', 'vehicle-rentals', 'suggestions'] as const,
+  },
 } as const;

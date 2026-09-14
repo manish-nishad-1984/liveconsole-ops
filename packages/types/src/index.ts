@@ -9,3 +9,4 @@ export * from './dto/audit.dto.js';
 export * from './dto/dashboard.dto.js';
 export * from './dto/masters.dto.js';
 export * from './dto/petty-cash.dto.js';
+export * from './dto/transport.dto.js';

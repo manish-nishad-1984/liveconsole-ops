@@ -37,3 +37,19 @@ export type CashEntryType = (typeof CASH_ENTRY_TYPES)[number];
 
 export const EXPENSE_STATUSES = ['PENDING', 'APPROVED', 'REJECTED'] as const;
 export type ExpenseStatus = (typeof EXPENSE_STATUSES)[number];
+
+/** PER_DAY: rate × days on rent. FIXED: rate is the whole rent. */
+export const RENT_BASES = ['PER_DAY', 'FIXED'] as const;
+export type RentBasis = (typeof RENT_BASES)[number];
+
+/** OFFICE: paid by the company. PETTY_CASH: paid by an employee from cash they hold. */
+export const RENT_PAYMENT_SOURCES = ['OFFICE', 'PETTY_CASH'] as const;
+export type RentPaymentSource = (typeof RENT_PAYMENT_SOURCES)[number];
+
+/** Derived from rent due and payments counted so far. */
+export const RENT_PAYMENT_STATUSES = ['PENDING', 'PARTIAL', 'PAID'] as const;
+export type RentPaymentStatus = (typeof RENT_PAYMENT_STATUSES)[number];
+
+/** Derived from the rental dates against today. */
+export const RENTAL_STATUSES = ['UPCOMING', 'ON_RENT', 'COMPLETED'] as const;
+export type RentalStatus = (typeof RENTAL_STATUSES)[number];

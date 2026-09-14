@@ -26,6 +26,7 @@ export const expenseSelect = {
   reviewedBy: { select: { id: true, fullName: true } },
   reviewedAt: true,
   reviewNote: true,
+  rentPayment: { select: { id: true, rentalId: true, rental: { select: { rentalNo: true } } } },
   createdAt: true,
   updatedAt: true,
   createdById: true,

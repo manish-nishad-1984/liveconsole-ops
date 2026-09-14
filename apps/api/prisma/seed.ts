@@ -90,6 +90,7 @@ const DEFAULT_EXPENSE_CATEGORIES = [
   'Material Purchase',
   'Labour Charges',
   'Local Transport',
+  'Vehicle Rent',
   'Hotel / Stay',
   'Tools & Hardware',
   'Miscellaneous',

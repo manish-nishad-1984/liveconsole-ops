@@ -3,6 +3,7 @@ import type { ExpenseDto } from '@liveconsole-ops/types';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Check, Pencil, RotateCcw, Trash2, X } from 'lucide-react';
 import { useEffect, useState, type ReactNode } from 'react';
+import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 
 import { ErrorState } from '@/components/common/ErrorState';
@@ -119,6 +120,19 @@ export const ExpenseDetailSheet = ({
                 <Row label="Date">{formatDateOnly(expense.expenseDate)}</Row>
                 <Row label="Site">{expense.site?.name ?? '—'}</Row>
                 <Row label="Category">{expense.category.name}</Row>
+                {expense.rentPayment ? (
+                  <Row label="Vehicle rent">
+                    <Link
+                      to={`/vehicle-rentals?view=${expense.rentPayment.rentalId}`}
+                      className="numeric text-primary"
+                    >
+                      {expense.rentPayment.rentalNo}
+                    </Link>
+                    <span className="block text-2xs font-normal text-muted-foreground">
+                      Edit or delete it from the rental
+                    </span>
+                  </Row>
+                ) : null}
                 <Row label="Paid to">{expense.paidTo ?? '—'}</Row>
                 <Row label="Paid by">{PAYMENT_MODE_LABELS[expense.paymentMode]}</Row>
                 <Row label="Submitted">{formatDateTime(expense.createdAt)}</Row>

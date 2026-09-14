@@ -56,10 +56,22 @@ const TONE_RULES: { tone: StatusTone; keywords: string[] }[] = [
     ],
   },
   { tone: 'warning', keywords: ['WARNING', 'LOCKED', 'HOLD', 'PARTIAL', 'BLOCKED', 'ATTENTION'] },
-  { tone: 'progress', keywords: ['IN_PROGRESS', 'PROCESSING', 'RUNNING', 'ONGOING', 'STARTED'] },
+  {
+    tone: 'progress',
+    keywords: ['IN_PROGRESS', 'PROCESSING', 'RUNNING', 'ONGOING', 'STARTED', 'ON_RENT'],
+  },
   {
     tone: 'info',
-    keywords: ['SUBMITTED', 'SENT', 'INVITED', 'SCHEDULED', 'QUEUED', 'REVIEW', 'RETURNED'],
+    keywords: [
+      'SUBMITTED',
+      'SENT',
+      'INVITED',
+      'SCHEDULED',
+      'QUEUED',
+      'REVIEW',
+      'RETURNED',
+      'UPCOMING',
+    ],
   },
   { tone: 'neutral', keywords: ['PENDING', 'DRAFT', 'NEW', 'OPEN', 'TODO'] },
 ];
