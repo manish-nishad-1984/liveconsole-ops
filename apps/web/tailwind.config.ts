@@ -23,6 +23,12 @@ export default {
         ring: 'hsl(var(--ring))',
         background: 'hsl(var(--background))',
         foreground: 'hsl(var(--foreground))',
+        /** The logo's own gradient stops — for brand accents, never for text. */
+        brand: {
+          red: 'hsl(var(--brand-red))',
+          orange: 'hsl(var(--brand-orange))',
+          amber: 'hsl(var(--brand-amber))',
+        },
         primary: {
           DEFAULT: 'hsl(var(--primary))',
           foreground: 'hsl(var(--primary-foreground))',

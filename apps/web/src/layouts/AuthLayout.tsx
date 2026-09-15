@@ -1,8 +1,8 @@
-import { APP_NAME } from '@liveconsole-ops/shared';
-import { Building2, LayoutGrid, ShieldCheck, SquareStack } from 'lucide-react';
 import { Suspense } from 'react';
 import { Outlet } from 'react-router-dom';
+import { CheckCircle2, Truck, Wallet } from 'lucide-react';
 
+import { BrandLogo } from '@/components/common/BrandLogo';
 import { LoadingState } from '@/components/common/LoadingState';
 
 /**
@@ -10,32 +10,30 @@ import { LoadingState } from '@/components/common/LoadingState';
  *
  * Split layout: the form on the left keeps focus where the work is, and the
  * right-hand panel — hidden below `lg` — carries the identity without competing
- * with it. No background image: the panel is a flat `bg-primary` fill, two blurred
- * circles and an icon-in-tinted-square feature list, so it never needs an asset
- * and never fights the form for attention.
+ * with it. The panel is always dark, whatever the theme, because that is the
+ * surface the LiveConsole logo is drawn for; the logo's red → orange → amber
+ * gradient glows behind it as blurred shapes rather than as a background image.
  */
 
-const TAGLINE = 'Admin & access control';
-const EYEBROW = "Built for what's next";
-const HEADLINE = 'A foundation for whatever you build on it.';
+const HEADLINE = 'Site cash and vehicles, accounted for.';
 const SUBCOPY =
-  'Multi-tenant from the first table, role-based access control that is enforced in the API and mirrored in the UI, and a module registry that wires navigation, routing and guards together.';
+  'Record what is handed out and spent at every site, approve it with the receipts in front of you, and keep track of every hired vehicle and what is still owed on it.';
 
 const FEATURES = [
   {
-    icon: ShieldCheck,
-    title: 'Role-based access control',
-    body: 'Permissions derived from one typed catalog, enforced on every route.',
+    icon: Wallet,
+    title: 'Petty cash',
+    body: 'Cash and UPI issued to employees, with a running balance for each.',
   },
   {
-    icon: Building2,
-    title: 'Multi-tenant by default',
-    body: 'Every query is scoped to the signed-in account’s organisation.',
+    icon: CheckCircle2,
+    title: 'Expense approvals',
+    body: 'Receipts attached, reviewed and approved before they touch a balance.',
   },
   {
-    icon: LayoutGrid,
-    title: 'Add a module without touching the router',
-    body: 'One registry entry generates the nav item, the route and its guard.',
+    icon: Truck,
+    title: 'Vehicle rentals',
+    body: 'Rent per day or per job, payments, and what is pending by site.',
   },
 ];
 
@@ -43,13 +41,11 @@ export const AuthLayout = () => (
   <div className="grid min-h-screen lg:grid-cols-2">
     <div className="flex flex-col justify-center px-6 py-10 sm:px-12">
       <div className="mx-auto w-full max-w-sm">
-        <div className="mb-8 flex items-center gap-2.5">
-          <span className="flex size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-            <SquareStack className="size-5" strokeWidth={2.5} />
-          </span>
-          <span>
-            <span className="block text-sm font-semibold leading-tight">{APP_NAME}</span>
-            <span className="block text-2xs text-muted-foreground">{TAGLINE}</span>
+        <div className="mb-8 flex items-center gap-3">
+          <BrandLogo className="h-12" />
+          <span aria-hidden className="h-6 w-px bg-border" />
+          <span className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+            Ops
           </span>
         </div>
 
@@ -62,37 +58,35 @@ export const AuthLayout = () => (
       </div>
     </div>
 
-    <aside className="relative hidden overflow-hidden bg-primary lg:flex lg:flex-col lg:justify-between">
+    <aside className="relative hidden overflow-hidden bg-neutral-950 text-white lg:flex lg:flex-col lg:justify-between">
       <div
         aria-hidden
-        className="pointer-events-none absolute -right-24 -top-24 size-96 rounded-full bg-white/25 blur-3xl"
+        className="pointer-events-none absolute -right-28 -top-28 size-[28rem] rounded-full bg-brand-amber/35 blur-3xl"
       />
       <div
         aria-hidden
-        className="pointer-events-none absolute -bottom-32 -left-20 size-80 rounded-full bg-white/20 blur-3xl"
+        className="pointer-events-none absolute right-24 top-40 size-72 rounded-full bg-brand-orange/30 blur-3xl"
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -bottom-32 -left-24 size-96 rounded-full bg-brand-red/30 blur-3xl"
       />
 
       <div className="relative p-12">
-        <p className="text-2xs font-semibold uppercase tracking-[0.2em] text-primary-foreground/70">
-          {EYEBROW}
-        </p>
-        <h2 className="mt-3 max-w-md text-3xl font-semibold leading-tight text-primary-foreground">
-          {HEADLINE}
-        </h2>
-        <p className="mt-4 max-w-md text-sm leading-relaxed text-primary-foreground/80">
-          {SUBCOPY}
-        </p>
+        <BrandLogo surface="dark" className="h-14" />
+        <h2 className="mt-10 max-w-md text-3xl font-semibold leading-tight">{HEADLINE}</h2>
+        <p className="mt-4 max-w-md text-sm leading-relaxed text-white/75">{SUBCOPY}</p>
       </div>
 
       <ul className="relative space-y-4 p-12">
         {FEATURES.map(({ icon: Icon, title, body }) => (
           <li key={title} className="flex items-start gap-3">
-            <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-md bg-primary-foreground/15 text-primary-foreground">
+            <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-md bg-white/10 text-brand-amber ring-1 ring-white/10">
               <Icon className="size-4" />
             </span>
             <span>
-              <span className="block text-sm font-medium text-primary-foreground">{title}</span>
-              <span className="block text-xs text-primary-foreground/75">{body}</span>
+              <span className="block text-sm font-medium">{title}</span>
+              <span className="block text-xs text-white/70">{body}</span>
             </span>
           </li>
         ))}
