@@ -6,7 +6,7 @@ import {
 } from '@liveconsole-ops/types';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { ColumnDef } from '@tanstack/react-table';
-import { AlertCircle, CheckCircle2, Download, IndianRupee, Plus, Truck } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Download, Plus, Truck } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -250,12 +250,16 @@ const VehicleRentalsPage = () => {
         </>
       }
       summary={
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        /* Three figures, the ones asked of this screen: how many vehicles are out,
+           what has been paid for them, and what is still owed. The rent the paid
+           figure is measured against rides along as its hint rather than taking a
+           tile of its own. */
+        <div className="grid gap-3 sm:grid-cols-3">
           <StatTile
             icon={Truck}
-            label="On rent now"
+            label="Vehicles on rent"
             value={formatNumber(summary?.onRent ?? 0)}
-            hint={`${formatNumber(summary?.count ?? 0)} in this list`}
+            hint={`${formatNumber(summary?.count ?? 0)} rentals in this list`}
             active={list.filters.rentalStatus === 'ON_RENT'}
             onClick={() =>
               list.setFilter(
@@ -265,21 +269,18 @@ const VehicleRentalsPage = () => {
             }
           />
           <StatTile
-            icon={IndianRupee}
-            label="Rent"
-            value={formatCurrency(summary?.rentDue ?? 0)}
-            hint={list.hasActiveFilters ? 'For the current filters' : 'All rentals, to date'}
-          />
-          <StatTile
             icon={CheckCircle2}
             tone="success"
-            label="Paid"
+            label="Total rent paid"
             value={formatCurrency(summary?.paid ?? 0)}
+            hint={`of ${formatCurrency(summary?.rentDue ?? 0)} rent${
+              list.hasActiveFilters ? ' (filtered)' : ''
+            }`}
           />
           <StatTile
             icon={AlertCircle}
             tone="danger"
-            label="Still to pay"
+            label="Total pending rent"
             value={formatCurrency(summary?.pending ?? 0)}
             hint="Tap to see unpaid"
             active={paymentFilter === 'PENDING'}
