@@ -111,7 +111,9 @@ export const ExpenseDetailSheet = ({
                 <StatusBadge status={expense.status} tone={expenseStatusTone(expense.status)} />
               </div>
               <p className="numeric text-2xl font-semibold">{formatCurrency(expense.amount)}</p>
-              <p className="text-sm text-muted-foreground">{expense.description}</p>
+              <p className="text-sm text-muted-foreground">
+                {expense.description || expense.category.name}
+              </p>
             </div>
 
             <div className="flex-1 space-y-5 px-5 py-4">
@@ -133,7 +135,9 @@ export const ExpenseDetailSheet = ({
                     </span>
                   </Row>
                 ) : null}
-                <Row label="Paid to">{expense.paidTo ?? '—'}</Row>
+                {/* Both are optional now, so a row is shown only when it has something to say. */}
+                {expense.description ? <Row label="Remark">{expense.description}</Row> : null}
+                {expense.paidTo ? <Row label="Paid to">{expense.paidTo}</Row> : null}
                 <Row label="Paid by">{PAYMENT_MODE_LABELS[expense.paymentMode]}</Row>
                 <Row label="Submitted">{formatDateTime(expense.createdAt)}</Row>
                 {expense.reviewedBy ? (

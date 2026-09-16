@@ -80,7 +80,8 @@ export interface ExpenseDto extends AuditFields {
   amount: MoneyString;
   paymentMode: PaymentMode;
   paidTo: string | null;
-  description: string;
+  /** "Remark" on screen — optional free text. */
+  description: string | null;
   status: ExpenseStatus;
   reviewedBy: PersonRef | null;
   reviewedAt: ISODateString | null;
@@ -103,7 +104,7 @@ export interface ExpenseRequest {
   amount: MoneyString | number;
   paymentMode: PaymentMode;
   paidTo?: string | null;
-  description: string;
+  description?: string | null;
 }
 
 export interface ReviewExpenseRequest {

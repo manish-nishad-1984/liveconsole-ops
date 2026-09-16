@@ -50,8 +50,8 @@ const schema = z.object({
     .regex(/^\d{1,10}(\.\d{1,2})?$/, 'Enter an amount like 450 or 450.50')
     .refine((value) => Number(value) > 0, 'Amount must be more than zero'),
   paymentMode: z.enum(PAYMENT_MODES),
-  paidTo: z.string().trim().max(120),
-  description: z.string().trim().min(1, 'Say what this was for').max(500),
+  /** "Remark" on screen — optional; the category already says what it was for. */
+  description: z.string().trim().max(500),
 });
 
 type ExpenseForm = z.infer<typeof schema>;
@@ -102,7 +102,6 @@ export const ExpenseFormModal = ({ open, onOpenChange, expense }: ExpenseFormMod
       categoryId: '',
       amount: '',
       paymentMode: 'CASH',
-      paidTo: '',
       description: '',
     },
   });
@@ -116,7 +115,6 @@ export const ExpenseFormModal = ({ open, onOpenChange, expense }: ExpenseFormMod
       categoryId: expense?.category.id ?? '',
       amount: expense?.amount ?? '',
       paymentMode: expense?.paymentMode ?? 'CASH',
-      paidTo: expense?.paidTo ?? '',
       description: expense?.description ?? '',
     });
     setQueued([]);
@@ -167,8 +165,9 @@ export const ExpenseFormModal = ({ open, onOpenChange, expense }: ExpenseFormMod
         categoryId: values.categoryId,
         amount: values.amount,
         paymentMode: values.paymentMode,
-        paidTo: values.paidTo || null,
-        description: values.description,
+        // `paidTo` is not on this form; leaving it out keeps whatever an older
+        // expense already has rather than clearing it.
+        description: values.description || null,
       };
       const saved = expense
         ? await expensesService.update(expense.id, payload)
@@ -203,7 +202,7 @@ export const ExpenseFormModal = ({ open, onOpenChange, expense }: ExpenseFormMod
     onError: (error) =>
       setFormError(
         applyFieldErrors(error, setError, {
-          knownFields: ['expenseDate', 'siteId', 'categoryId', 'amount', 'paidTo', 'description'],
+          knownFields: ['expenseDate', 'siteId', 'categoryId', 'amount', 'description'],
           fallback: 'Could not save this expense.',
         }),
       ),
@@ -301,7 +300,12 @@ export const ExpenseFormModal = ({ open, onOpenChange, expense }: ExpenseFormMod
             )}
           </FormField>
 
-          <FormField label="What was it for?" error={errors.description?.message} required full>
+          <FormField
+            label="Remark"
+            error={errors.description?.message}
+            hint="Optional — anything the category does not already say."
+            full
+          >
             {(props) => (
               <Textarea
                 {...props}
@@ -310,10 +314,6 @@ export const ExpenseFormModal = ({ open, onOpenChange, expense }: ExpenseFormMod
                 placeholder="e.g. Diesel for generator, tea for crew"
               />
             )}
-          </FormField>
-
-          <FormField label="Paid to" error={errors.paidTo?.message} hint="Shop or person.">
-            {(props) => <Input {...props} {...register('paidTo')} />}
           </FormField>
 
           <FormField label="Paid by">

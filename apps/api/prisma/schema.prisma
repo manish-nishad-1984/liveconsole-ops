@@ -586,7 +586,9 @@ model Expense {
   /// How the employee paid the vendor.
   paymentMode    PaymentMode @default(CASH)
   paidTo         String?
-  description    String
+  /// Free text the employee may add — shown as "Remark". Optional: the category
+  /// already says what the money went on, so a note is only for the exceptions.
+  description    String?
 
   status       ExpenseStatus @default(PENDING)
   reviewedById String?       @db.Uuid

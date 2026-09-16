@@ -193,16 +193,18 @@ const ExpensesListPage = () => {
       {
         id: 'description',
         header: 'Expense',
-        cell: ({ row }) => (
-          <div className="min-w-0 max-w-[20rem]">
-            <p className="truncate text-sm font-medium">{row.original.description}</p>
-            <p className="truncate text-2xs text-muted-foreground">
-              {row.original.site ? `${row.original.site.name} · ` : ''}
-              {row.original.category.name}
-              {row.original.paidTo ? ` · ${row.original.paidTo}` : ''}
-            </p>
-          </div>
-        ),
+        cell: ({ row }) => {
+          const { description, category, site, paidTo } = row.original;
+          // The remark is optional, so an expense without one is titled by its
+          // category — and then the line below does not repeat it.
+          const details = [site?.name, description ? category.name : null, paidTo].filter(Boolean);
+          return (
+            <div className="min-w-0 max-w-[20rem]">
+              <p className="truncate text-sm font-medium">{description || category.name}</p>
+              <p className="truncate text-2xs text-muted-foreground">{details.join(' · ')}</p>
+            </div>
+          );
+        },
       },
       {
         id: 'amount',
@@ -427,7 +429,7 @@ const ExpensesListPage = () => {
         title={`Delete ${confirmDelete?.expenseNo ?? 'this expense'}?`}
         description={
           confirmDelete
-            ? `${formatCurrency(confirmDelete.amount)} — ${confirmDelete.description}`
+            ? `${formatCurrency(confirmDelete.amount)} — ${confirmDelete.description || confirmDelete.category.name}`
             : undefined
         }
         confirmLabel="Delete expense"

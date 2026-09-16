@@ -7,7 +7,6 @@ import {
   listQuery,
   optionalText,
   optionalUuid,
-  shortText,
   uuid,
 } from '../../lib/validators.js';
 
@@ -20,7 +19,8 @@ export const expenseSchema = z.object({
   amount,
   paymentMode: z.nativeEnum(PaymentMode).default('CASH'),
   paidTo: optionalText(120),
-  description: shortText(500),
+  /** "Remark" on screen — optional. */
+  description: optionalText(500),
 });
 
 export const updateExpenseSchema = z
@@ -32,7 +32,7 @@ export const updateExpenseSchema = z
     amount,
     paymentMode: z.nativeEnum(PaymentMode),
     paidTo: optionalText(120),
-    description: shortText(500),
+    description: optionalText(500),
   })
   .partial()
   .refine((data) => Object.keys(data).length > 0, {
