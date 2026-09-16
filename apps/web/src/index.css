@@ -157,7 +157,18 @@
 
   .erp-table thead th {
     @apply sticky top-0 z-10 whitespace-nowrap border-b border-border bg-muted/70 px-3 py-2
-      text-left text-2xs font-semibold uppercase tracking-wide text-muted-foreground backdrop-blur;
+      text-2xs font-semibold uppercase tracking-wide text-muted-foreground backdrop-blur;
+  }
+
+  /**
+   * Headings read left by default, but a numeric column asks for `text-right` on
+   * the cell *and* the heading so the two line up. `:where()` carries no
+   * specificity, so that utility wins here — spelled `.erp-table thead th` this
+   * default would outrank it and every amount column would head left over
+   * right-aligned figures.
+   */
+  :where(.erp-table thead th) {
+    text-align: left;
   }
 
   .erp-table tbody td {
