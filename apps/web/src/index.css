@@ -113,10 +113,12 @@
     text-rendering: optimizeLegibility;
   }
 
-  /* Tabular figures keep numeric columns aligned down the page. */
+  /**
+   * Figures in the regular UI font — only the digits are made tabular, so a
+   * column of amounts still lines up without the numbers reading as code.
+   */
   .numeric {
     font-variant-numeric: tabular-nums;
-    @apply font-mono text-[0.8125rem];
   }
 
   /* Slim, unobtrusive scrollbars — a dense app has a lot of them. */

@@ -3,6 +3,7 @@ import type { AmountByName, ExpenseDto } from '@liveconsole-ops/types';
 import { useQuery } from '@tanstack/react-query';
 import {
   AlertCircle,
+  ArrowDownLeft,
   ArrowRight,
   CalendarDays,
   Clock,
@@ -144,18 +145,42 @@ const DashboardPage = () => {
         <ErrorState error={error} onRetry={() => void refetch()} />
       ) : data ? (
         <>
+          {/* An employee is shown their running totals — received, spent, and what
+              is left after it — because that is the question they open this screen
+              with. The company view keeps the same figures rolled up. */}
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <StatTile
+              icon={ArrowDownLeft}
+              tone="success"
+              label={isCompany ? 'Total given' : 'Total received'}
+              value={formatCurrency(data.totals.cashGiven)}
+              hint={
+                Number(data.totals.cashReturned) > 0
+                  ? `${formatCurrency(data.totals.cashReturned)} returned`
+                  : 'Cash and UPI, all time'
+              }
+            />
+            <StatTile
+              icon={Receipt}
+              label="Total expense"
+              value={formatCurrency(data.totals.approvedExpenses)}
+              hint={
+                Number(data.totals.pendingExpenses) > 0
+                  ? `${formatCurrency(data.totals.pendingExpenses)} not approved yet`
+                  : 'Approved bills only'
+              }
+            />
             <StatTile
               icon={Wallet}
               tone={Number(data.totals.balance) < 0 ? 'danger' : 'default'}
-              label={isCompany ? 'Cash with employees' : 'My balance'}
+              label={isCompany ? 'Cash with employees' : 'Balance'}
               value={formatCurrency(data.totals.balance)}
               hint={
-                isCompany
-                  ? 'Given − returned − approved'
-                  : Number(data.totals.balance) < 0
-                    ? 'The office owes you this'
-                    : 'Cash in hand'
+                Number(data.totals.balance) < 0
+                  ? isCompany
+                    ? 'Employees have spent more than they hold'
+                    : 'The office owes you this'
+                  : 'Received − returned − expense'
               }
             />
             <StatTile
@@ -165,9 +190,11 @@ const DashboardPage = () => {
               value={formatCurrency(data.totals.pendingExpenses)}
               hint={`${formatNumber(data.totals.pendingCount)} bills`}
             />
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <StatTile
               icon={CalendarDays}
-              tone="success"
               label={isCompany ? `Given in ${monthName}` : `Received in ${monthName}`}
               value={formatCurrency(data.thisMonth.cashGiven)}
             />
