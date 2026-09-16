@@ -1,4 +1,4 @@
-import { DEFAULT_CURRENCY, DEFAULT_LOCALE } from '../constants.js';
+import { DEFAULT_LOCALE } from '../constants.js';
 
 /**
  * Presentation helpers.
@@ -18,16 +18,17 @@ export const formatNumber = (
   return new Intl.NumberFormat(DEFAULT_LOCALE, options).format(numeric);
 };
 
-export const formatCurrency = (
-  value: number | string | null | undefined,
-  currency = DEFAULT_CURRENCY,
-): string => {
+/**
+ * Money as a plain figure — Indian grouping, always two decimals, and no ₹.
+ * The whole app is one company in one currency, so the symbol on every row was
+ * noise; the column heading says what the number is.
+ */
+export const formatCurrency = (value: number | string | null | undefined): string => {
   if (value === null || value === undefined || value === '') return '—';
   const numeric = typeof value === 'string' ? Number(value) : value;
   if (!Number.isFinite(numeric)) return '—';
   return new Intl.NumberFormat(DEFAULT_LOCALE, {
-    style: 'currency',
-    currency,
+    minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(numeric);
 };

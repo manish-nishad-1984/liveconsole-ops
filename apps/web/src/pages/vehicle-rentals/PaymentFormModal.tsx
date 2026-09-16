@@ -207,7 +207,7 @@ export const PaymentFormModal = ({
           </div>
         ) : null}
 
-        <FormField label="Amount (₹)" error={errors.amount?.message} required>
+        <FormField label="Amount" error={errors.amount?.message} required>
           {(props) => (
             <Input
               {...props}

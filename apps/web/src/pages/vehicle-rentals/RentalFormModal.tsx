@@ -359,7 +359,7 @@ export const RentalFormModal = ({ open, onOpenChange, rental, onSaved }: RentalF
             </FormField>
 
             <FormField
-              label={rentBasis === 'PER_DAY' ? 'Rate per day (₹)' : 'Total rent (₹)'}
+              label={rentBasis === 'PER_DAY' ? 'Rate per day' : 'Total rent'}
               error={errors.rate?.message}
               required
             >
@@ -375,7 +375,7 @@ export const RentalFormModal = ({ open, onOpenChange, rental, onSaved }: RentalF
             </FormField>
 
             <FormField
-              label="Extra charges (₹)"
+              label="Extra charges"
               error={errors.extraCharges?.message}
               hint="Diesel, driver allowance, loading."
             >

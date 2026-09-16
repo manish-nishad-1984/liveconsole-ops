@@ -252,7 +252,7 @@ export const ExpenseFormModal = ({ open, onOpenChange, expense }: ExpenseFormMod
             </FormField>
           ) : null}
 
-          <FormField label="Amount (₹)" error={errors.amount?.message} required>
+          <FormField label="Amount" error={errors.amount?.message} required>
             {(props) => (
               <Input
                 {...props}
@@ -285,7 +285,7 @@ export const ExpenseFormModal = ({ open, onOpenChange, expense }: ExpenseFormMod
             )}
           </FormField>
 
-          <FormField label="Category" error={errors.categoryId?.message} required>
+          <FormField label="Category" error={errors.categoryId?.message} required full>
             {(props) => (
               <OptionSelect
                 id={props.id}

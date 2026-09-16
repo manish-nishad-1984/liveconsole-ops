@@ -201,7 +201,7 @@ export const CashEntryFormModal = ({
             )}
           </FormField>
 
-          <FormField label="Amount (₹)" error={errors.amount?.message} required>
+          <FormField label="Amount" error={errors.amount?.message} required>
             {(props) => (
               <Input
                 {...props}
