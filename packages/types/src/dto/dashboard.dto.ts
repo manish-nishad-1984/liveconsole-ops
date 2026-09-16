@@ -15,22 +15,20 @@ export interface DashboardSummaryDto {
   totals: {
     cashGiven: MoneyString;
     cashReturned: MoneyString;
-    approvedExpenses: MoneyString;
-    pendingExpenses: MoneyString;
-    pendingCount: number;
+    expenses: MoneyString;
+    expenseCount: number;
     /** Cash currently with employees (own: with me). */
     balance: MoneyString;
   };
   thisMonth: {
     cashGiven: MoneyString;
-    approvedExpenses: MoneyString;
-    submittedExpenses: MoneyString;
+    expenses: MoneyString;
   };
   /** Employees by balance, largest first. Empty for `own`. */
   employees: BalanceRowDto[];
-  /** Latest expenses still waiting for approval. */
-  pendingExpenses: ExpenseDto[];
-  /** Approved + pending spend this month. */
+  /** The latest expenses filed. */
+  recentExpenses: ExpenseDto[];
+  /** Spend this month. */
   bySite: AmountByName[];
   byCategory: AmountByName[];
   /** Vehicles on rent and rent still to pay. Null without `transport:view`. */

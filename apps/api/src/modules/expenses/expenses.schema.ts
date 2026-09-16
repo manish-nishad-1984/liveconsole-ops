@@ -1,4 +1,4 @@
-import { ExpenseStatus, PaymentMode } from '@prisma/client';
+import { PaymentMode } from '@prisma/client';
 import { z } from 'zod';
 
 import {
@@ -39,20 +39,7 @@ export const updateExpenseSchema = z
     message: 'Nothing to update',
   });
 
-export const approveSchema = z.object({ note: optionalText(500) });
-
-/** A rejection always says why — the employee has to know what to fix. */
-export const rejectSchema = z.object({
-  note: z.string().trim().min(1, 'Say why this expense is rejected').max(500),
-});
-
-export const bulkApproveSchema = z.object({
-  ids: z.array(uuid).min(1, 'Select at least one expense').max(200),
-  note: optionalText(500),
-});
-
 export const expenseListQuerySchema = listQuery.extend({
-  status: z.nativeEnum(ExpenseStatus).optional(),
   employeeId: uuid.optional(),
   siteId: uuid.optional(),
   categoryId: uuid.optional(),
@@ -67,7 +54,6 @@ export const EXPENSE_SORT_FIELDS = [
   'expenseDate',
   'expenseNo',
   'amount',
-  'status',
   'createdAt',
   'employee.fullName',
   'site.name',
@@ -75,7 +61,4 @@ export const EXPENSE_SORT_FIELDS = [
 
 export type ExpenseInput = z.infer<typeof expenseSchema>;
 export type UpdateExpenseInput = z.infer<typeof updateExpenseSchema>;
-export type ApproveInput = z.infer<typeof approveSchema>;
-export type RejectInput = z.infer<typeof rejectSchema>;
-export type BulkApproveInput = z.infer<typeof bulkApproveSchema>;
 export type ExpenseListQueryInput = z.infer<typeof expenseListQuerySchema>;

@@ -36,7 +36,7 @@ const topByAmount = (
 
 export const getSummary = async (): Promise<DashboardSummaryDto> => {
   const organizationId = requireOrg();
-  const ownOnly = employeeScope('balances:manage', 'expenses:manage', 'expenses:approve');
+  const ownOnly = employeeScope('balances:manage', 'expenses:manage');
   const employeeFilter = ownOnly ? { employeeId: ownOnly } : {};
   const monthStart = parseDateOnly(monthStartInIndia());
 
@@ -45,15 +45,13 @@ export const getSummary = async (): Promise<DashboardSummaryDto> => {
     deletedAt: null,
     ...employeeFilter,
     expenseDate: { gte: monthStart },
-    status: { in: ['PENDING', 'APPROVED'] },
   } satisfies Prisma.ExpenseWhereInput;
 
   const [
     ledger,
     monthGiven,
-    monthApproved,
-    monthSubmitted,
-    pending,
+    monthSpent,
+    recent,
     bySite,
     byCategory,
     employees,
@@ -70,17 +68,12 @@ export const getSummary = async (): Promise<DashboardSummaryDto> => {
       },
       _sum: { amount: true },
     }),
-    prisma.expense.aggregate({
-      where: { ...monthSpend, status: 'APPROVED' },
-      _sum: { amount: true },
-    }),
     prisma.expense.aggregate({ where: monthSpend, _sum: { amount: true } }),
     prisma.expense.findMany({
       where: {
         organizationId,
         deletedAt: null,
         ...employeeFilter,
-        status: 'PENDING',
       },
       select: expenseSelect,
       orderBy: [{ expenseDate: 'desc' }, { createdAt: 'desc' }],
@@ -113,15 +106,13 @@ export const getSummary = async (): Promise<DashboardSummaryDto> => {
 
   let cashGiven = ZERO;
   let cashReturned = ZERO;
-  let approvedExpenses = ZERO;
-  let pendingExpenses = ZERO;
-  let pendingCount = 0;
+  let expenses = ZERO;
+  let expenseCount = 0;
   for (const row of ledger.values()) {
     cashGiven = cashGiven.plus(row.cashGiven);
     cashReturned = cashReturned.plus(row.cashReturned);
-    approvedExpenses = approvedExpenses.plus(row.approvedExpenses);
-    pendingExpenses = pendingExpenses.plus(row.pendingExpenses);
-    pendingCount += row.pendingCount;
+    expenses = expenses.plus(row.expenses);
+    expenseCount += row.expenseCount;
   }
 
   return {
@@ -129,18 +120,16 @@ export const getSummary = async (): Promise<DashboardSummaryDto> => {
     totals: {
       cashGiven: money(cashGiven),
       cashReturned: money(cashReturned),
-      approvedExpenses: money(approvedExpenses),
-      pendingExpenses: money(pendingExpenses),
-      pendingCount,
-      balance: money(cashGiven.minus(cashReturned).minus(approvedExpenses)),
+      expenses: money(expenses),
+      expenseCount,
+      balance: money(cashGiven.minus(cashReturned).minus(expenses)),
     },
     thisMonth: {
       cashGiven: money(monthGiven._sum.amount),
-      approvedExpenses: money(monthApproved._sum.amount),
-      submittedExpenses: money(monthSubmitted._sum.amount),
+      expenses: money(monthSpent._sum.amount),
     },
     employees: employees.slice(0, 10),
-    pendingExpenses: await expensesToDtos(organizationId, pending),
+    recentExpenses: await expensesToDtos(organizationId, recent),
     bySite: topByAmount(
       // Expenses without a site still count, under their own bar.
       bySite.map((row) => ({ key: row.siteId ?? NO_SITE, amount: row._sum.amount })),

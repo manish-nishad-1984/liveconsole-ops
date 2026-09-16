@@ -2,7 +2,7 @@ import { formatCurrency } from '@liveconsole-ops/shared';
 import type { BalanceRowDto } from '@liveconsole-ops/types';
 import { useQuery } from '@tanstack/react-query';
 import type { ColumnDef } from '@tanstack/react-table';
-import { Clock, Download, HandCoins, Scale, Wallet } from 'lucide-react';
+import { Download, HandCoins, Receipt, Scale, Wallet } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -52,16 +52,14 @@ const BalancesListPage = () => {
   const totals = useMemo(() => {
     let holding = 0;
     let owed = 0;
-    let pending = 0;
-    let pendingCount = 0;
+    let spent = 0;
     for (const row of rows) {
       const balance = Number(row.balance);
       if (balance > 0) holding += balance;
       else owed += -balance;
-      pending += Number(row.pendingExpenses);
-      pendingCount += row.pendingCount;
+      spent += Number(row.expenses);
     }
-    return { holding, owed, pending, pendingCount };
+    return { holding, owed, spent };
   }, [rows]);
 
   const columns = useMemo<ColumnDef<BalanceRowDto, unknown>[]>(
@@ -97,26 +95,19 @@ const BalancesListPage = () => {
         ),
       },
       {
-        id: 'approvedExpenses',
-        header: 'Spent (approved)',
+        id: 'expenses',
+        header: 'Expenses',
         meta: meta({ numeric: true, priority: 'normal' }),
         cell: ({ row }) => (
-          <span className="numeric text-xs">{formatCurrency(row.original.approvedExpenses)}</span>
+          <span className="numeric text-xs">
+            {formatCurrency(row.original.expenses)}
+            {row.original.expenseCount > 0 ? (
+              <span className="block text-2xs text-muted-foreground">
+                {row.original.expenseCount} bills
+              </span>
+            ) : null}
+          </span>
         ),
-      },
-      {
-        id: 'pending',
-        header: 'Pending',
-        meta: meta({ numeric: true, priority: 'low' }),
-        cell: ({ row }) =>
-          row.original.pendingCount > 0 ? (
-            <span className="numeric text-xs text-status-warning">
-              {formatCurrency(row.original.pendingExpenses)}
-              <span className="block text-2xs">{row.original.pendingCount} bills</span>
-            </span>
-          ) : (
-            <span className="text-xs text-muted-foreground">—</span>
-          ),
       },
       {
         id: 'balance',
@@ -141,7 +132,7 @@ const BalancesListPage = () => {
   return (
     <ResourceLayout
       title="Balances"
-      description="What each employee holds. Balance = cash given − returned − approved expenses."
+      description="What each employee holds. Balance = cash given − returned − expenses."
       actions={
         canExport ? (
           <Button
@@ -174,12 +165,11 @@ const BalancesListPage = () => {
             hint="Spent from their own pocket"
           />
           <StatTile
-            icon={Clock}
-            tone="warning"
-            label="Waiting for approval"
-            value={formatCurrency(totals.pending)}
-            hint={`${totals.pendingCount} bills — not in balances yet`}
-            onClick={() => navigate('/expenses?status=PENDING')}
+            icon={Receipt}
+            label="Total expenses"
+            value={formatCurrency(totals.spent)}
+            hint="Already deducted from balances"
+            onClick={() => navigate('/expenses')}
           />
         </div>
       }

@@ -164,11 +164,6 @@ export const PaymentFormModal = ({
       size="md"
     >
       {formError ? <FormAlert tone="error">{formError}</FormAlert> : null}
-      {payment?.expense?.status === 'REJECTED' ? (
-        <FormAlert tone="warning" title={`${payment.expense.expenseNo} was rejected`}>
-          Saving sends it for approval again.
-        </FormAlert>
-      ) : null}
 
       <FormGrid>
         <FormField label="Whose money?" full>
@@ -202,7 +197,7 @@ export const PaymentFormModal = ({
           <div className="sm:col-span-2">
             <FormAlert tone="info">
               This files a <strong>Vehicle Rent</strong> expense for {payerName}. It comes off their
-              petty cash balance once the expense is approved.
+              petty cash balance as an expense.
             </FormAlert>
           </div>
         ) : null}

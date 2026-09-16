@@ -17,7 +17,7 @@ import { LoadingState } from '@/components/common/LoadingState';
 
 const HEADLINE = 'Site cash and vehicles, accounted for.';
 const SUBCOPY =
-  'Record what is handed out and spent at every site, approve it with the receipts in front of you, and keep track of every hired vehicle and what is still owed on it.';
+  'Record what is handed out and spent at every site, with the receipts attached, and keep track of every hired vehicle and what is still owed on it.';
 
 const FEATURES = [
   {
@@ -27,8 +27,8 @@ const FEATURES = [
   },
   {
     icon: CheckCircle2,
-    title: 'Expense approvals',
-    body: 'Receipts attached, reviewed and approved before they touch a balance.',
+    title: 'Expenses with receipts',
+    body: 'A photo of the bill, filed from the phone and off the balance at once.',
   },
   {
     icon: Truck,

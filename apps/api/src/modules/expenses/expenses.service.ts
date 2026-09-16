@@ -1,11 +1,4 @@
-import type {
-  AttachmentDto,
-  BulkApproveResponse,
-  ExpenseDto,
-  ExpenseListDto,
-  StatusTotal,
-} from '@liveconsole-ops/types';
-import type { ExpenseStatus } from '@prisma/client';
+import type { AttachmentDto, ExpenseDto, ExpenseListDto } from '@liveconsole-ops/types';
 import type { Readable } from 'node:stream';
 
 import { toCsv } from '../../lib/csv.js';
@@ -28,40 +21,28 @@ import { employeeScope, findActiveEmployee } from '../../services/ledger.service
 import * as repository from './expenses.repository.js';
 import type { AttachmentRecord, ExpenseRecord } from './expenses.repository.js';
 import type {
-  ApproveInput,
-  BulkApproveInput,
   ExpenseInput,
   ExpenseListQueryInput,
-  RejectInput,
   UpdateExpenseInput,
 } from './expenses.schema.js';
 
 /**
- * Expenses — what employees spend at site, submitted for an administrator to
- * approve. Only APPROVED expenses reduce an employee's balance.
+ * Expenses — what employees spend at site. There is no approval step: an expense
+ * reduces the employee's balance from the moment it is filed.
  *
  * Who can do what:
- *  • Everyone sees their own expenses. `expenses:manage` or `expenses:approve`
- *    sees everyone's (an approver has to see what they are approving).
- *  • The owner may edit or delete while PENDING or REJECTED. Editing a REJECTED
- *    expense resubmits it as PENDING.
- *  • `expenses:manage` may edit or delete anyone's expense that is not APPROVED.
- *  • An APPROVED expense is locked. To correct one, an approver reopens it first,
- *    which puts it back to PENDING and takes it out of the balance.
+ *  • Everyone sees and edits their own expenses. `expenses:manage` sees and edits
+ *    everyone's.
  *  • An expense created by a petty cash vehicle rent payment belongs to that
- *    payment: it is reviewed here, but edited and deleted only through Transport.
+ *    payment: it is edited and deleted only through Transport.
  */
 
 const DOCUMENT_PREFIX = 'EX';
 const MAX_ATTACHMENTS = 5;
 
-const scope = () => employeeScope('expenses:manage', 'expenses:approve');
+const scope = () => employeeScope('expenses:manage');
 
-const isEditable = (
-  expense: { status: ExpenseStatus; employeeId: string },
-  action: 'update' | 'delete',
-) => {
-  if (expense.status === 'APPROVED') return false;
+const isEditable = (expense: { employeeId: string }, action: 'update' | 'delete') => {
   if (!actorCan(`expenses:${action}`)) return false;
   return actorCan('expenses:manage') || expense.employeeId === getActorId();
 };
@@ -77,10 +58,6 @@ const toDto = (expense: ExpenseRecord, attachmentCount = 0): ExpenseDto => ({
   paymentMode: expense.paymentMode,
   paidTo: expense.paidTo,
   description: expense.description,
-  status: expense.status,
-  reviewedBy: expense.reviewedBy,
-  reviewedAt: expense.reviewedAt?.toISOString() ?? null,
-  reviewNote: expense.reviewNote,
   attachmentCount,
   canEdit: !expense.rentPayment && isEditable(expense, 'update'),
   rentPayment: expense.rentPayment
@@ -128,25 +105,17 @@ export const toDtos = async (organizationId: string, expenses: ExpenseRecord[]) 
 
 export const list = async (query: ExpenseListQueryInput): Promise<ExpenseListDto> => {
   const organizationId = requireOrg();
-  const { items, total, page, pageSize, byStatus } = await repository.listExpenses(
+  const { items, totals, page, pageSize } = await repository.listExpenses(
     organizationId,
     query,
     scope(),
   );
 
-  const statusTotal = (status: ExpenseStatus): StatusTotal => {
-    const row = byStatus.find((entry) => entry.status === status);
-    return { count: row?._count._all ?? 0, amount: money(row?._sum.amount) };
-  };
-
   return {
     items: await toDtos(organizationId, items),
-    pagination: buildPaginationMeta(total, { page, pageSize }),
-    summary: {
-      pending: statusTotal('PENDING'),
-      approved: statusTotal('APPROVED'),
-      rejected: statusTotal('REJECTED'),
-    },
+    pagination: buildPaginationMeta(totals._count._all, { page, pageSize }),
+    // The whole filtered set, not just this page — the tile above the table.
+    totals: { count: totals._count._all, amount: money(totals._sum.amount) },
   };
 };
 
@@ -249,11 +218,6 @@ export const update = async (id: string, input: UpdateExpenseInput): Promise<Exp
   const existing = await loadVisible(organizationId, id);
   assertNotFromRentPayment(existing);
 
-  if (existing.status === 'APPROVED') {
-    throw new BusinessRuleError(
-      'An approved expense cannot be changed. Ask an approver to reopen it.',
-    );
-  }
   if (!isEditable(existing, 'update')) {
     throw new ForbiddenError('You can only edit your own expenses');
   }
@@ -272,9 +236,6 @@ export const update = async (id: string, input: UpdateExpenseInput): Promise<Exp
     categoryId: input.categoryId !== existing.categoryId ? input.categoryId : undefined,
   });
 
-  // Fixing a rejected expense is a resubmission.
-  const resubmit = existing.status === 'REJECTED';
-
   const expense = await repository.updateExpense(id, {
     ...(input.employeeId !== undefined ? { employeeId: input.employeeId } : {}),
     ...(input.siteId !== undefined ? { siteId: input.siteId } : {}),
@@ -284,14 +245,6 @@ export const update = async (id: string, input: UpdateExpenseInput): Promise<Exp
     ...(input.paymentMode !== undefined ? { paymentMode: input.paymentMode } : {}),
     ...(input.paidTo !== undefined ? { paidTo: input.paidTo } : {}),
     ...(input.description !== undefined ? { description: input.description } : {}),
-    ...(resubmit
-      ? {
-          status: 'PENDING',
-          reviewedById: null,
-          reviewedAt: null,
-          reviewNote: null,
-        }
-      : {}),
     ...auditUpdate(),
   });
 
@@ -300,7 +253,6 @@ export const update = async (id: string, input: UpdateExpenseInput): Promise<Exp
     employee: record.employee.fullName,
     site: record.site?.name ?? null,
     category: record.category.name,
-    reviewedBy: record.reviewedBy?.fullName ?? null,
   });
 
   await recordAudit({
@@ -309,7 +261,6 @@ export const update = async (id: string, input: UpdateExpenseInput): Promise<Exp
     entityId: id,
     entityLabel: expense.expenseNo,
     changes: diffRecords(snapshot(existing), snapshot(expense)),
-    metadata: resubmit ? { resubmitted: true } : null,
   });
 
   const attachments = await repository.countAttachmentsByExpense(organizationId, [id]);
@@ -321,11 +272,6 @@ export const remove = async (id: string): Promise<ExpenseDto> => {
   const existing = await loadVisible(organizationId, id);
   assertNotFromRentPayment(existing);
 
-  if (existing.status === 'APPROVED') {
-    throw new BusinessRuleError(
-      'An approved expense cannot be deleted. Ask an approver to reopen it.',
-    );
-  }
   if (!isEditable(existing, 'delete')) {
     throw new ForbiddenError('You can only delete your own expenses');
   }
@@ -348,99 +294,6 @@ export const remove = async (id: string): Promise<ExpenseDto> => {
 };
 
 /* ------------------------------------------------------------------ */
-/* Review                                                              */
-/* ------------------------------------------------------------------ */
-
-const review = async (
-  id: string,
-  from: ExpenseStatus[],
-  to: ExpenseStatus,
-  note: string | null,
-): Promise<ExpenseDto> => {
-  const organizationId = requireOrg();
-  const actorId = getActorId()!;
-
-  const expense = await prisma.$transaction(async (tx) => {
-    const existing = await repository.findExpenseById(organizationId, id, null, tx);
-    if (!existing) throw new NotFoundError('Expense');
-    if (!from.includes(existing.status)) {
-      throw new BusinessRuleError(
-        `This expense is already ${existing.status.toLowerCase()} and cannot be moved to ${to.toLowerCase()}`,
-      );
-    }
-
-    const reviewed = to !== 'PENDING';
-    const updated = await repository.updateExpense(
-      id,
-      {
-        status: to,
-        reviewedById: reviewed ? actorId : null,
-        reviewedAt: reviewed ? new Date() : null,
-        reviewNote: reviewed ? note : null,
-        ...auditUpdate(),
-      },
-      tx,
-    );
-
-    await recordAudit({
-      action: to === 'APPROVED' ? 'APPROVE' : to === 'REJECTED' ? 'REJECT' : 'STATUS_CHANGE',
-      entityType: 'Expense',
-      entityId: id,
-      entityLabel: updated.expenseNo,
-      changes: { status: { from: existing.status, to } },
-      metadata: note ? { note } : null,
-      db: tx,
-    });
-
-    return updated;
-  });
-
-  const attachments = await repository.countAttachmentsByExpense(organizationId, [id]);
-  return toDto(expense, attachments.get(id) ?? 0);
-};
-
-export const approve = (id: string, input: ApproveInput) =>
-  review(id, ['PENDING'], 'APPROVED', input.note ?? null);
-
-export const reject = (id: string, input: RejectInput) =>
-  review(id, ['PENDING'], 'REJECTED', input.note);
-
-/** Back to PENDING — the only way to correct an approved expense. */
-export const reopen = (id: string) => review(id, ['APPROVED', 'REJECTED'], 'PENDING', null);
-
-export const bulkApprove = async (input: BulkApproveInput): Promise<BulkApproveResponse> => {
-  const organizationId = requireOrg();
-  const actorId = getActorId()!;
-  const ids = [...new Set(input.ids)];
-
-  const pending = await repository.findPendingByIds(organizationId, ids);
-  if (pending.length === 0) return { approved: 0, skipped: ids.length };
-
-  const { count } = await repository.approveMany(
-    pending.map((expense) => expense.id),
-    {
-      reviewedById: actorId,
-      reviewedAt: new Date(),
-      reviewNote: input.note ?? null,
-      updatedById: actorId,
-    },
-  );
-
-  for (const expense of pending) {
-    await recordAudit({
-      action: 'APPROVE',
-      entityType: 'Expense',
-      entityId: expense.id,
-      entityLabel: expense.expenseNo,
-      changes: { status: { from: 'PENDING', to: 'APPROVED' } },
-      metadata: { bulk: true, ...(input.note ? { note: input.note } : {}) },
-    });
-  }
-
-  return { approved: count, skipped: ids.length - count };
-};
-
-/* ------------------------------------------------------------------ */
 /* Attachments                                                         */
 /* ------------------------------------------------------------------ */
 
@@ -448,11 +301,7 @@ export const bulkApprove = async (input: BulkApproveInput): Promise<BulkApproveR
 const assertCanAttach = (expense: ExpenseRecord) => {
   if (actorCan('expenses:manage')) return;
   if (!isEditable(expense, 'update')) {
-    throw new BusinessRuleError(
-      expense.status === 'APPROVED'
-        ? 'Receipts cannot be changed on an approved expense'
-        : 'You can only add receipts to your own expenses',
-    );
+    throw new BusinessRuleError('You can only add receipts to your own expenses');
   }
 };
 
@@ -565,9 +414,6 @@ export const exportToCsv = async (query: ExpenseListQueryInput): Promise<string>
       'Paid To',
       'Mode',
       'Amount',
-      'Status',
-      'Reviewed By',
-      'Review Note',
     ],
     expenses.map((expense) => [
       expense.expenseNo,
@@ -579,9 +425,6 @@ export const exportToCsv = async (query: ExpenseListQueryInput): Promise<string>
       expense.paidTo,
       expense.paymentMode,
       money(expense.amount),
-      expense.status,
-      expense.reviewedBy?.fullName,
-      expense.reviewNote,
     ]),
   );
 };

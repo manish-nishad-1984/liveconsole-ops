@@ -1,7 +1,7 @@
 # LiveConsole Ops
 
 Internal web app for LiveConsole staff: **petty cash** (cash/UPI issued to
-employees, expenses with receipts, admin approval and balances) and
+employees, expenses with receipts and balances) and
 **transportation** (rented vehicles per site, rent periods, payments).
 
 Live: <http://live.kriviinfotech.com>

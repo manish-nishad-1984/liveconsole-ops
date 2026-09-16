@@ -1,5 +1,5 @@
 import type { AuditFields, ISODateString, Paginated, UUID } from '../common.js';
-import type { CashEntryType, ExpenseStatus, PaymentMode } from '../enums.js';
+import type { CashEntryType, PaymentMode } from '../enums.js';
 
 /**
  * Petty cash contracts.
@@ -82,10 +82,6 @@ export interface ExpenseDto extends AuditFields {
   paidTo: string | null;
   /** "Remark" on screen — optional free text. */
   description: string | null;
-  status: ExpenseStatus;
-  reviewedBy: PersonRef | null;
-  reviewedAt: ISODateString | null;
-  reviewNote: string | null;
   attachmentCount: number;
   /** Populated on the detail endpoint only. */
   attachments?: AttachmentDto[];
@@ -107,34 +103,9 @@ export interface ExpenseRequest {
   description?: string | null;
 }
 
-export interface ReviewExpenseRequest {
-  note?: string | null;
-}
-
-export interface BulkApproveRequest {
-  ids: UUID[];
-  note?: string | null;
-}
-
-export interface BulkApproveResponse {
-  approved: number;
-  skipped: number;
-}
-
-export interface StatusTotal {
-  count: number;
-  amount: MoneyString;
-}
-
-export interface ExpenseSummaryDto {
-  pending: StatusTotal;
-  approved: StatusTotal;
-  rejected: StatusTotal;
-}
-
-/** The expense list, with per-status totals for the filtered set (status filter ignored). */
+/** The expense list, with the total for the whole filtered set (not just the page). */
 export interface ExpenseListDto extends Paginated<ExpenseDto> {
-  summary: ExpenseSummaryDto;
+  totals: { count: number; amount: MoneyString };
 }
 
 /* ------------------------------------------------------------------ */
@@ -143,7 +114,7 @@ export interface ExpenseListDto extends Paginated<ExpenseDto> {
 
 /**
  * One employee's position.
- *   balance = cashGiven − cashReturned − approvedExpenses
+ *   balance = cashGiven − cashReturned − expenses
  * Positive: the employee is holding company cash. Negative: the company owes the
  * employee (they spent out of pocket).
  */
@@ -151,9 +122,8 @@ export interface BalanceRowDto {
   employee: PersonRef & { mobile: string | null; designation: string | null };
   cashGiven: MoneyString;
   cashReturned: MoneyString;
-  approvedExpenses: MoneyString;
-  pendingExpenses: MoneyString;
-  pendingCount: number;
+  expenses: MoneyString;
+  expenseCount: number;
   balance: MoneyString;
   lastActivityOn: DateOnlyString | null;
 }
@@ -183,6 +153,4 @@ export interface StatementDto {
   totalDebit: MoneyString;
   closingBalance: MoneyString;
   lines: StatementLineDto[];
-  /** Not in the running balance until approved. */
-  pending: { count: number; amount: MoneyString };
 }

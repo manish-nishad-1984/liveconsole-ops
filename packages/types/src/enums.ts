@@ -35,9 +35,6 @@ export type PaymentMode = (typeof PAYMENT_MODES)[number];
 export const CASH_ENTRY_TYPES = ['GIVEN', 'RETURNED'] as const;
 export type CashEntryType = (typeof CASH_ENTRY_TYPES)[number];
 
-export const EXPENSE_STATUSES = ['PENDING', 'APPROVED', 'REJECTED'] as const;
-export type ExpenseStatus = (typeof EXPENSE_STATUSES)[number];
-
 /** PER_DAY: rate × days on rent. FIXED: rate is the whole rent. */
 export const RENT_BASES = ['PER_DAY', 'FIXED'] as const;
 export type RentBasis = (typeof RENT_BASES)[number];

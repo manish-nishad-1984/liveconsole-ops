@@ -69,11 +69,11 @@ const ROLE_SEEDS: RoleSeed[] = [
     permissions: ALL_PERMISSIONS,
   },
   {
-    // Site staff: submit their own expenses, see their own cash and balance, and
+    // Site staff: file their own expenses, see their own cash and balance, and
     // record the vehicles they hire.
     slug: 'employee',
     name: 'Employee',
-    description: 'Submits own expenses and vehicle rentals; sees own cash book and balance.',
+    description: 'Files own expenses and vehicle rentals; sees own cash book and balance.',
     permissions: [
       ...only('dashboard', 'view'),
       ...only('expenses', 'view', 'create', 'update', 'delete'),

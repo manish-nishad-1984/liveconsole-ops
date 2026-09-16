@@ -99,7 +99,6 @@ export const statementExpenses = (
       organizationId,
       employeeId,
       deletedAt: null,
-      status: 'APPROVED',
       expenseDate: range(from, to),
     },
     select: {
@@ -114,20 +113,3 @@ export const statementExpenses = (
     },
   });
 
-export const pendingInRange = (
-  organizationId: string,
-  employeeId: string,
-  from?: string,
-  to?: string,
-) =>
-  prisma.expense.aggregate({
-    where: {
-      organizationId,
-      employeeId,
-      deletedAt: null,
-      status: 'PENDING',
-      expenseDate: range(from, to),
-    },
-    _sum: { amount: true },
-    _count: { _all: true },
-  });

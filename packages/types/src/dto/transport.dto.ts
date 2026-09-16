@@ -1,6 +1,5 @@
 import type { AuditFields, Paginated, UUID } from '../common.js';
 import type {
-  ExpenseStatus,
   PaymentMode,
   RentBasis,
   RentPaymentSource,
@@ -13,9 +12,9 @@ import type { DateOnlyString, MoneyString, NamedRef, PersonRef } from './petty-c
  * Transport contracts — vehicles hired for a site and the rent paid for them.
  *
  *   rent due = (PER_DAY: rate × days · FIXED: rate) + extra charges
- *   pending  = rent due − payments counted
+ *   pending  = rent due − payments
  *
- * A payment from petty cash is counted unless its expense was rejected.
+ * A payment made from petty cash also files an expense for whoever paid.
  */
 
 export interface RentPaymentDto extends AuditFields {
@@ -28,9 +27,7 @@ export interface RentPaymentDto extends AuditFields {
   referenceNo: string | null;
   notes: string | null;
   /** The petty cash expense behind a PETTY_CASH payment. */
-  expense: { id: UUID; expenseNo: string; status: ExpenseStatus } | null;
-  /** False when its petty cash expense was rejected. */
-  counted: boolean;
+  expense: { id: UUID; expenseNo: string } | null;
   canEdit: boolean;
 }
 

@@ -22,10 +22,6 @@ export const expenseSelect = {
   paymentMode: true,
   paidTo: true,
   description: true,
-  status: true,
-  reviewedBy: { select: { id: true, fullName: true } },
-  reviewedAt: true,
-  reviewNote: true,
   rentPayment: { select: { id: true, rentalId: true, rental: { select: { rentalNo: true } } } },
   createdAt: true,
   updatedAt: true,
@@ -37,20 +33,15 @@ export type ExpenseRecord = Prisma.ExpenseGetPayload<{
   select: typeof expenseSelect;
 }>;
 
-/**
- * `employeeScope` null = every employee's expenses. `ignoreStatus` builds the
- * where for the status tiles, which must show every status whatever is selected.
- */
+/** `employeeScope` null = every employee's expenses. */
 const buildWhere = (
   organizationId: string,
   query: ExpenseListQueryInput,
   employeeScope: string | null,
-  ignoreStatus = false,
 ): Prisma.ExpenseWhereInput =>
   and(
     { organizationId, deletedAt: null },
     employeeScope ? { employeeId: employeeScope } : equals('employeeId', query.employeeId),
-    ignoreStatus ? undefined : equals('status', query.status),
     equals('siteId', query.siteId),
     equals('categoryId', query.categoryId),
     equals('paymentMode', query.paymentMode),
@@ -83,7 +74,7 @@ export const listExpenses = async (
     dir: 'desc',
   }) as Prisma.ExpenseOrderByWithRelationInput;
 
-  const [items, total, byStatus] = await Promise.all([
+  const [items, totals] = await Promise.all([
     prisma.expense.findMany({
       where,
       select: expenseSelect,
@@ -91,16 +82,10 @@ export const listExpenses = async (
       skip,
       take,
     }),
-    prisma.expense.count({ where }),
-    prisma.expense.groupBy({
-      by: ['status'],
-      where: buildWhere(organizationId, query, employeeScope, true),
-      _sum: { amount: true },
-      _count: { _all: true },
-    }),
+    prisma.expense.aggregate({ where, _sum: { amount: true }, _count: { _all: true } }),
   ]);
 
-  return { items, total, page, pageSize, byStatus };
+  return { items, totals, page, pageSize };
 };
 
 export const listAllExpenses = (
@@ -138,32 +123,6 @@ export const updateExpense = (
   data: Prisma.ExpenseUncheckedUpdateInput,
   db: Db = prisma,
 ) => db.expense.update({ where: { id }, data, select: expenseSelect });
-
-export const findPendingByIds = (organizationId: string, ids: string[]) =>
-  prisma.expense.findMany({
-    where: {
-      organizationId,
-      id: { in: ids },
-      deletedAt: null,
-      status: 'PENDING',
-    },
-    select: { id: true, expenseNo: true, amount: true },
-  });
-
-export const approveMany = (
-  ids: string[],
-  data: {
-    reviewedById: string;
-    reviewedAt: Date;
-    reviewNote: string | null;
-    updatedById: string;
-  },
-) =>
-  prisma.expense.updateMany({
-    // Re-checked here: something approved or rejected since the read stays as it is.
-    where: { id: { in: ids }, status: 'PENDING', deletedAt: null },
-    data: { ...data, status: 'APPROVED' },
-  });
 
 export const findActiveSite = (organizationId: string, id: string) =>
   prisma.site.findFirst({

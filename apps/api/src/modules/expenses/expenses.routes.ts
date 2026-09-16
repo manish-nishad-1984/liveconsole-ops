@@ -8,19 +8,15 @@ import { singleFile } from '../../middleware/upload.js';
 import { validate } from '../../middleware/validate.js';
 import * as controller from './expenses.controller.js';
 import {
-  approveSchema,
   attachmentParams,
-  bulkApproveSchema,
   expenseListQuerySchema,
   expenseSchema,
-  rejectSchema,
   updateExpenseSchema,
 } from './expenses.schema.js';
 
 /**
  * Route permissions say what kind of action this is; the service then decides
- * whose record it may be done to (own vs. everyone's) and whether the expense's
- * status still allows it.
+ * whose record it may be done to — their own, or everyone's with `expenses:manage`.
  */
 export const expensesRoutes = Router();
 
@@ -37,13 +33,6 @@ expensesRoutes.get(
   heavyOperationLimiter,
   validate({ query: expenseListQuerySchema }),
   asyncHandler(controller.exportCsv),
-);
-
-expensesRoutes.post(
-  '/bulk-approve',
-  requirePermission('expenses:approve'),
-  validate({ body: bulkApproveSchema }),
-  asyncHandler(controller.bulkApprove),
 );
 
 expensesRoutes.get(
@@ -72,27 +61,6 @@ expensesRoutes.delete(
   requirePermission('expenses:delete'),
   validate({ params: uuidParam }),
   asyncHandler(controller.remove),
-);
-
-expensesRoutes.post(
-  '/:id/approve',
-  requirePermission('expenses:approve'),
-  validate({ params: uuidParam, body: approveSchema }),
-  asyncHandler(controller.approve),
-);
-
-expensesRoutes.post(
-  '/:id/reject',
-  requirePermission('expenses:approve'),
-  validate({ params: uuidParam, body: rejectSchema }),
-  asyncHandler(controller.reject),
-);
-
-expensesRoutes.post(
-  '/:id/reopen',
-  requirePermission('expenses:approve'),
-  validate({ params: uuidParam }),
-  asyncHandler(controller.reopen),
 );
 
 /* Receipts */

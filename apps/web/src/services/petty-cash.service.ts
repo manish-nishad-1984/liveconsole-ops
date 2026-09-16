@@ -1,7 +1,6 @@
 import type {
   AttachmentDto,
   BalanceRowDto,
-  BulkApproveResponse,
   CashBookListDto,
   CashEntryDto,
   CashEntryRequest,
@@ -29,16 +28,6 @@ export const expensesService = {
   update: (id: string, payload: Partial<ExpenseRequest>) =>
     api.patch<ExpenseDto>(`/expenses/${id}`, payload),
   remove: (id: string) => api.delete<ExpenseDto>(`/expenses/${id}`),
-
-  approve: (id: string, note?: string | null) =>
-    api.post<ExpenseDto>(`/expenses/${id}/approve`, { note: note ?? null }),
-  reject: (id: string, note: string) => api.post<ExpenseDto>(`/expenses/${id}/reject`, { note }),
-  reopen: (id: string) => api.post<ExpenseDto>(`/expenses/${id}/reopen`),
-  bulkApprove: (ids: string[], note?: string | null) =>
-    api.post<BulkApproveResponse>('/expenses/bulk-approve', {
-      ids,
-      note: note ?? null,
-    }),
 
   uploadReceipt: (id: string, file: Blob, fileName: string) =>
     api.upload<AttachmentDto>(`/expenses/${id}/attachments`, file, fileName),

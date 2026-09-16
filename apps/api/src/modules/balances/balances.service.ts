@@ -55,9 +55,8 @@ export const list = async (query: BalanceListQueryInput): Promise<BalanceRowDto[
         employee: employeeRef(employee),
         cashGiven: money(row?.cashGiven),
         cashReturned: money(row?.cashReturned),
-        approvedExpenses: money(row?.approvedExpenses),
-        pendingExpenses: money(row?.pendingExpenses),
-        pendingCount: row?.pendingCount ?? 0,
+        expenses: money(row?.expenses),
+        expenseCount: row?.expenseCount ?? 0,
         balance: money(row?.balance),
         lastActivityOn: lastDate ? formatDateOnly(lastDate) : null,
       };
@@ -78,11 +77,10 @@ export const statement = async (
   const employee = await repository.findEmployee(organizationId, userId);
   if (!employee) throw new NotFoundError('Employee');
 
-  const [opening, cashEntries, expenses, pending] = await Promise.all([
+  const [opening, cashEntries, expenses] = await Promise.all([
     query.from ? totalsFor(organizationId, userId, { before: query.from }) : null,
     repository.statementCashEntries(organizationId, userId, query.from, query.to),
     repository.statementExpenses(organizationId, userId, query.from, query.to),
-    repository.pendingInRange(organizationId, userId, query.from, query.to),
   ]);
 
   type Unsorted = Omit<StatementLineDto, 'runningBalance'> & {
@@ -144,7 +142,6 @@ export const statement = async (
     totalDebit: money(totalDebit),
     closingBalance: money(running),
     lines,
-    pending: { count: pending._count._all, amount: money(pending._sum.amount) },
   };
 };
 
@@ -162,9 +159,8 @@ export const exportBalancesCsv = async (query: BalanceListQueryInput): Promise<s
       'Mobile',
       'Cash Given',
       'Cash Returned',
-      'Approved Expenses',
-      'Pending Expenses',
-      'Pending Count',
+      'Expenses',
+      'Expense Count',
       'Balance',
       'Last Activity',
     ],
@@ -173,9 +169,8 @@ export const exportBalancesCsv = async (query: BalanceListQueryInput): Promise<s
       row.employee.mobile,
       row.cashGiven,
       row.cashReturned,
-      row.approvedExpenses,
-      row.pendingExpenses,
-      row.pendingCount,
+      row.expenses,
+      row.expenseCount,
       row.balance,
       row.lastActivityOn,
     ]),

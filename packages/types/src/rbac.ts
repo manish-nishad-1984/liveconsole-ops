@@ -37,7 +37,7 @@ export const MODULE_PERMISSIONS = {
 
   // Petty cash. On these modules `manage` means "every employee's records";
   // without it a user sees and acts on their own records only.
-  expenses: [...CRUD, 'approve', 'export', 'manage'],
+  expenses: [...CRUD, 'export', 'manage'],
   cash_book: [...CRUD, 'export', 'manage'],
   balances: ['view', 'export', 'manage'],
 

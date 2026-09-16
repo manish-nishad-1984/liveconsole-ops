@@ -6,7 +6,6 @@ import {
   ArrowDownLeft,
   ArrowRight,
   CalendarDays,
-  Clock,
   Plus,
   Receipt,
   Truck,
@@ -17,21 +16,19 @@ import { Link, useNavigate } from 'react-router-dom';
 import { ErrorState } from '@/components/common/ErrorState';
 import { LoadingState } from '@/components/common/LoadingState';
 import { StatTile } from '@/components/common/StatTile';
-import { StatusBadge } from '@/components/common/StatusBadge';
 import { Button } from '@/components/ui/button';
 import { usePermissions } from '@/hooks/use-permissions';
 import { PageLayout, SectionCard } from '@/layouts/PageLayout';
 import { queryKeys } from '@/lib/query-client';
 import { BalanceAmount } from '@/pages/balances/BalancesListPage';
-import { expenseStatusTone } from '@/pages/expenses/ExpenseDetailSheet';
 import { dashboardService } from '@/services/dashboard.service';
 import { useAuthStore } from '@/store/auth.store';
 import { formatDateOnly } from '@/utils/dates';
 
 /**
  * The petty cash dashboard. The same screen serves both audiences: an
- * administrator sees the company (who holds cash, what waits for approval), an
- * employee sees themselves (my balance, my pending bills).
+ * administrator sees the company (who holds cash, what has been spent), an
+ * employee sees themselves (what I received, spent, and hold).
  */
 
 const monthName = new Intl.DateTimeFormat('en-IN', {
@@ -73,7 +70,7 @@ const RankedBars = ({ rows, empty }: { rows: AmountByName[]; empty: string }) =>
   );
 };
 
-const PendingList = ({
+const RecentList = ({
   expenses,
   showEmployee,
 }: {
@@ -81,7 +78,7 @@ const PendingList = ({
   showEmployee: boolean;
 }) => {
   if (expenses.length === 0) {
-    return <p className="text-xs text-muted-foreground">Nothing is waiting for approval.</p>;
+    return <p className="text-xs text-muted-foreground">No expenses yet.</p>;
   }
   return (
     <ul className="divide-y divide-border">
@@ -97,14 +94,7 @@ const PendingList = ({
               {expense.site?.name ?? expense.category.name}
             </p>
           </div>
-          <div className="shrink-0 text-right">
-            <p className="numeric text-sm font-semibold">{formatCurrency(expense.amount)}</p>
-            <StatusBadge
-              status={expense.status}
-              tone={expenseStatusTone(expense.status)}
-              withDot={false}
-            />
-          </div>
+          <p className="numeric shrink-0 text-sm font-semibold">{formatCurrency(expense.amount)}</p>
         </li>
       ))}
     </ul>
@@ -163,12 +153,8 @@ const DashboardPage = () => {
             <StatTile
               icon={Receipt}
               label="Total expense"
-              value={formatCurrency(data.totals.approvedExpenses)}
-              hint={
-                Number(data.totals.pendingExpenses) > 0
-                  ? `${formatCurrency(data.totals.pendingExpenses)} not approved yet`
-                  : 'Approved bills only'
-              }
+              value={formatCurrency(data.totals.expenses)}
+              hint={formatNumber(data.totals.expenseCount) + ' bills'}
             />
             <StatTile
               icon={Wallet}
@@ -183,13 +169,6 @@ const DashboardPage = () => {
                   : 'Received − returned − expense'
               }
             />
-            <StatTile
-              icon={Clock}
-              tone="warning"
-              label="Waiting for approval"
-              value={formatCurrency(data.totals.pendingExpenses)}
-              hint={`${formatNumber(data.totals.pendingCount)} bills`}
-            />
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -201,8 +180,7 @@ const DashboardPage = () => {
             <StatTile
               icon={Receipt}
               label={`Spent in ${monthName}`}
-              value={formatCurrency(data.thisMonth.submittedExpenses)}
-              hint={`${formatCurrency(data.thisMonth.approvedExpenses)} approved`}
+              value={formatCurrency(data.thisMonth.expenses)}
             />
           </div>
 
@@ -253,9 +231,7 @@ const DashboardPage = () => {
                           <div className="min-w-0 flex-1">
                             <p className="truncate text-sm font-medium">{row.employee.fullName}</p>
                             <p className="truncate text-2xs text-muted-foreground">
-                              {row.pendingCount > 0
-                                ? `${row.pendingCount} pending · ${formatCurrency(row.pendingExpenses)}`
-                                : 'No pending bills'}
+                              {formatCurrency(row.expenses)} spent · {row.expenseCount} bills
                             </p>
                           </div>
                           <BalanceAmount value={row.balance} className="text-sm" />
@@ -268,30 +244,25 @@ const DashboardPage = () => {
             ) : null}
 
             <SectionCard
-              title="Waiting for approval"
-              description={
-                isCompany ? 'Latest bills to check.' : 'Your bills the office has not approved yet.'
-              }
+              title="Latest expenses"
+              description={isCompany ? 'The most recent bills filed.' : 'The last bills you filed.'}
               actions={
                 <Button variant="ghost" size="sm" asChild>
-                  <Link to="/expenses?status=PENDING">
+                  <Link to="/expenses">
                     All
                     <ArrowRight />
                   </Link>
                 </Button>
               }
             >
-              <PendingList expenses={data.pendingExpenses} showEmployee={isCompany} />
+              <RecentList expenses={data.recentExpenses} showEmployee={isCompany} />
             </SectionCard>
 
-            <SectionCard title={`Spend by site — ${monthName}`} description="Approved and pending.">
+            <SectionCard title={`Spend by site — ${monthName}`} description="This month.">
               <RankedBars rows={data.bySite} empty="No expenses this month." />
             </SectionCard>
 
-            <SectionCard
-              title={`Spend by category — ${monthName}`}
-              description="Approved and pending."
-            >
+            <SectionCard title={`Spend by category — ${monthName}`} description="This month.">
               <RankedBars rows={data.byCategory} empty="No expenses this month." />
             </SectionCard>
           </div>

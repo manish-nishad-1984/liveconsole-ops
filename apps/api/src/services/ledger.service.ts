@@ -9,11 +9,12 @@ import { actorCan, getActorId } from '../lib/requestContext.js';
 /**
  * The petty cash ledger, stated once.
  *
- *   balance = cash GIVEN − cash RETURNED − APPROVED expenses
+ *   balance = cash GIVEN − cash RETURNED − expenses
  *
  * Balances, the statement, the dashboard and the "cannot return more than they
  * hold" rule all read from here, so there is exactly one definition of what an
- * employee holds. PENDING expenses are reported alongside but never move it.
+ * employee holds. There is no approval step: an expense counts from the moment
+ * it is filed.
  */
 
 /**
@@ -30,18 +31,16 @@ export const employeeScope = (...seeAll: PermissionKey[]): string | null => {
 export interface EmployeeTotals {
   cashGiven: Prisma.Decimal;
   cashReturned: Prisma.Decimal;
-  approvedExpenses: Prisma.Decimal;
-  pendingExpenses: Prisma.Decimal;
-  pendingCount: number;
+  expenses: Prisma.Decimal;
+  expenseCount: number;
   balance: Prisma.Decimal;
 }
 
 const emptyTotals = (): EmployeeTotals => ({
   cashGiven: ZERO,
   cashReturned: ZERO,
-  approvedExpenses: ZERO,
-  pendingExpenses: ZERO,
-  pendingCount: 0,
+  expenses: ZERO,
+  expenseCount: 0,
   balance: ZERO,
 });
 
@@ -83,13 +82,12 @@ export const computeTotals = async (
       _sum: { amount: true },
     }),
     db.expense.groupBy({
-      by: ['employeeId', 'status'],
+      by: ['employeeId'],
       where: {
         organizationId,
         deletedAt: null,
         employeeId: employeeFilter,
         expenseDate: dates,
-        status: { in: ['APPROVED', 'PENDING'] },
       },
       _sum: { amount: true },
       _count: { _all: true },
@@ -114,16 +112,12 @@ export const computeTotals = async (
 
   for (const row of expenses) {
     const target = entry(row.employeeId);
-    if (row.status === 'APPROVED') {
-      target.approvedExpenses = toDecimal(row._sum.amount);
-    } else {
-      target.pendingExpenses = toDecimal(row._sum.amount);
-      target.pendingCount = row._count._all;
-    }
+    target.expenses = toDecimal(row._sum.amount);
+    target.expenseCount = row._count._all;
   }
 
   for (const value of totals.values()) {
-    value.balance = value.cashGiven.minus(value.cashReturned).minus(value.approvedExpenses);
+    value.balance = value.cashGiven.minus(value.cashReturned).minus(value.expenses);
   }
 
   return totals;

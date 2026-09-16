@@ -6,7 +6,6 @@ import {
   ArrowDownLeft,
   ArrowLeft,
   ArrowUpRight,
-  Clock,
   Download,
   FileText,
   Wallet,
@@ -31,7 +30,7 @@ import { runExport } from '@/utils/download';
 const meta = (value: DataTableColumnMeta): DataTableColumnMeta => value;
 
 /**
- * An employee's running statement: opening balance, every cash entry and approved
+ * An employee's running statement: opening balance, every cash entry and
  * expense in date order with the balance after each, then the closing balance.
  * This is the page both sides look at when the numbers are being settled.
  */
@@ -125,7 +124,7 @@ const StatementPage = () => {
       description={
         data
           ? [data.employee.designation, data.employee.mobile].filter(Boolean).join(' · ') ||
-            'Cash received, expenses approved and the balance after each.'
+            'Cash received, expenses filed and the balance after each.'
           : undefined
       }
       actions={
@@ -181,16 +180,6 @@ const StatementPage = () => {
         />
       </div>
 
-      {data && data.pending.count > 0 ? (
-        <Link
-          to={`/expenses?status=PENDING${canSeeAll ? `&employeeId=${userId}` : ''}`}
-          className="flex items-center gap-2 rounded-md border border-status-warning/30 bg-status-warning/10 px-4 py-2.5 text-sm text-status-warning"
-        >
-          <Clock className="size-4" />
-          {data.pending.count} expense{data.pending.count === 1 ? '' : 's'} (
-          {formatCurrency(data.pending.amount)}) waiting for approval — not included above.
-        </Link>
-      ) : null}
 
       <DataTable
         data={data?.lines ?? []}
@@ -206,7 +195,7 @@ const StatementPage = () => {
           <EmptyState
             icon={FileText}
             title="Nothing in this period"
-            description="Cash entries and approved expenses appear here."
+            description="Cash entries and expenses appear here."
           />
         }
         toolbar={

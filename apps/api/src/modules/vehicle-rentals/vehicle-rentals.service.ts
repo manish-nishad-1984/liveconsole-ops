@@ -53,9 +53,8 @@ import type {
  *  • The employee in charge sees and edits their rentals; `transport:manage`
  *    sees and edits everyone's.
  *  • A payment from PETTY_CASH creates an Expense for whoever paid, in the
- *    "Vehicle Rent" category. It then needs approval like any other expense and
- *    only moves their balance once approved. A rejected one no longer counts as
- *    paid. Once its expense is approved the payment is locked.
+ *    "Vehicle Rent" category, so it comes off their petty cash balance like any
+ *    other expense.
  *  • Paying more than is due is refused once the amount due is final (a closed
  *    per-day rental, or a fixed rent). While a per-day rental is still running an
  *    advance is allowed.
@@ -83,10 +82,6 @@ interface RentFigures {
   dueIsFinal: boolean;
 }
 
-/** A payment counts as paid unless its petty cash expense was rejected. */
-const isCounted = (payment: Pick<PaymentRecord, 'expense'>) =>
-  !payment.expense || payment.expense.status !== 'REJECTED';
-
 type RentTerms = Pick<RentalRecord, 'fromDate' | 'toDate' | 'rentBasis' | 'rate' | 'extraCharges'>;
 
 const computeFigures = (
@@ -109,7 +104,7 @@ const computeFigures = (
   const rentDue = base.plus(toDecimal(rental.extraCharges));
 
   const paid = payments
-    .filter((payment) => payment.id !== options.excludePaymentId && isCounted(payment))
+    .filter((payment) => payment.id !== options.excludePaymentId)
     .reduce((total, payment) => total.plus(toDecimal(payment.amount)), ZERO);
 
   const paymentStatus: RentPaymentStatus = paid.lessThanOrEqualTo(0)
@@ -140,10 +135,6 @@ const canActOn = (rental: { employeeId: string }, action: 'update' | 'delete') =
   actorCan(`transport:${action}`) &&
   (actorCan('transport:manage') || rental.employeeId === getActorId());
 
-/** An approved petty cash expense locks its payment, as it locks the expense. */
-const isPaymentLocked = (payment: Pick<PaymentRecord, 'expense'>) =>
-  payment.expense?.status === 'APPROVED';
-
 /* ------------------------------------------------------------------ */
 /* DTOs                                                                */
 /* ------------------------------------------------------------------ */
@@ -162,11 +153,9 @@ const toPaymentDto = (payment: PaymentRecord, rental: { employeeId: string }): R
       ? {
           id: payment.expense.id,
           expenseNo: payment.expense.expenseNo,
-          status: payment.expense.status,
         }
       : null,
-  counted: isCounted(payment),
-  canEdit: !isPaymentLocked(payment) && canActOn(rental, 'update'),
+  canEdit: canActOn(rental, 'update'),
   createdAt: payment.createdAt.toISOString(),
   updatedAt: payment.updatedAt.toISOString(),
   createdById: payment.createdById,
@@ -658,11 +647,6 @@ export const updatePayment = async (
   if (!canActOn(rental, 'update')) {
     throw new ForbiddenError('You can only change payments on rentals you are in charge of');
   }
-  if (isPaymentLocked(existing)) {
-    throw new BusinessRuleError(
-      `Its petty cash expense ${existing.expense!.expenseNo} is approved. Ask an approver to reopen it first.`,
-    );
-  }
 
   const terms: PaymentTerms = {
     paymentDate: input.paymentDate ?? formatDateOnly(existing.paymentDate),
@@ -682,17 +666,10 @@ export const updatePayment = async (
     let expenseId = liveExpenseId;
 
     if (source === 'PETTY_CASH' && liveExpenseId) {
-      // Keep the expense in step. Fixing a rejected one sends it for approval again.
-      const resubmit = existing.expense!.status === 'REJECTED';
+      // Keep the expense in step with the payment it belongs to.
       await tx.expense.update({
         where: { id: liveExpenseId },
-        data: {
-          ...expenseFields(rental, terms),
-          ...(resubmit
-            ? { status: 'PENDING', reviewedById: null, reviewedAt: null, reviewNote: null }
-            : {}),
-          ...auditUpdate(),
-        },
+        data: { ...expenseFields(rental, terms), ...auditUpdate() },
       });
       await recordAudit({
         action: 'UPDATE',
@@ -703,7 +680,7 @@ export const updatePayment = async (
           { amount: money(existing.amount), expenseDate: formatDateOnly(existing.paymentDate) },
           { amount: money(terms.amount), expenseDate: terms.paymentDate },
         ),
-        metadata: { vehicleRental: rental.rentalNo, ...(resubmit ? { resubmitted: true } : {}) },
+        metadata: { vehicleRental: rental.rentalNo },
         db: tx,
       });
     } else if (source === 'PETTY_CASH') {
@@ -764,11 +741,6 @@ export const removePayment = async (
 
   if (!canActOn(rental, 'delete')) {
     throw new ForbiddenError('You can only delete payments on rentals you are in charge of');
-  }
-  if (isPaymentLocked(existing)) {
-    throw new BusinessRuleError(
-      `Its petty cash expense ${existing.expense!.expenseNo} is approved. Ask an approver to reopen it first.`,
-    );
   }
 
   await prisma.$transaction(async (tx) => {

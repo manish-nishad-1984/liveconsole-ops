@@ -16,7 +16,6 @@ import { useCan } from '@/hooks/use-permissions';
 import { PAYMENT_MODE_LABELS, RENT_BASIS_LABELS, RENT_SOURCE_LABELS } from '@/lib/labels';
 import { queryKeys } from '@/lib/query-client';
 import { cn } from '@/lib/utils';
-import { expenseStatusTone } from '@/pages/expenses/ExpenseDetailSheet';
 import { PaymentFormModal } from '@/pages/vehicle-rentals/PaymentFormModal';
 import {
   PAYMENT_STATUS_LABELS,
@@ -207,12 +206,7 @@ export const RentalDetailSheet = ({
                             <IndianRupee className="size-3.5" />
                           </span>
                           <div className="min-w-0 flex-1 space-y-0.5">
-                            <p
-                              className={cn(
-                                'numeric text-sm font-semibold',
-                                !payment.counted && 'text-muted-foreground line-through',
-                              )}
-                            >
+                            <p className="numeric text-sm font-semibold">
                               {formatCurrency(payment.amount)}
                             </p>
                             <p className="text-2xs text-muted-foreground">
@@ -230,18 +224,9 @@ export const RentalDetailSheet = ({
                                   className="inline-flex items-center gap-1 text-2xs text-primary"
                                 >
                                   <span className="numeric">{payment.expense.expenseNo}</span>
-                                  <StatusBadge
-                                    status={payment.expense.status}
-                                    tone={expenseStatusTone(payment.expense.status)}
-                                  />
                                 </Link>
                               ) : null}
                             </div>
-                            {!payment.counted ? (
-                              <p className="text-2xs text-status-danger">
-                                Not counted as paid — its expense was rejected. Edit to resubmit.
-                              </p>
-                            ) : null}
                             {payment.notes ? (
                               <p className="text-2xs text-muted-foreground">{payment.notes}</p>
                             ) : null}

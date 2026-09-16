@@ -217,24 +217,15 @@ export const ExpenseFormModal = ({ open, onOpenChange, expense }: ExpenseFormMod
         open={open}
         onOpenChange={onOpenChange}
         title={expense ? `Edit ${expense.expenseNo}` : 'Add an expense'}
-        description={
-          expense?.status === 'REJECTED'
-            ? 'Saving sends this expense for approval again.'
-            : 'It goes to the office for approval. Attach a photo of the bill.'
-        }
+        description="It comes off the cash you hold straight away. Attach a photo of the bill."
         onSubmit={handleSubmit((values) => mutation.mutate(values))}
         submitLabel={
-          uploading ? 'Uploading receipts…' : expense ? 'Save changes' : 'Submit expense'
+          uploading ? 'Uploading receipts…' : expense ? 'Save changes' : 'Save expense'
         }
         isSubmitting={busy}
         size="md"
       >
         {formError ? <FormAlert tone="error">{formError}</FormAlert> : null}
-        {expense?.status === 'REJECTED' && expense.reviewNote ? (
-          <FormAlert tone="warning" title="Rejected">
-            {expense.reviewNote}
-          </FormAlert>
-        ) : null}
 
         <FormGrid>
           {canManage ? (

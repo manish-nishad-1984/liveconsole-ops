@@ -590,7 +590,11 @@ model Expense {
   /// already says what the money went on, so a note is only for the exceptions.
   description    String?
 
-  status       ExpenseStatus @default(PENDING)
+  /// Approval was removed at the client's request: every expense counts against
+  /// the employee's balance as soon as it is filed, so new rows are APPROVED.
+  /// The column and the three review fields below are kept for the history of
+  /// what was reviewed while approval existed — nothing writes them now.
+  status       ExpenseStatus @default(APPROVED)
   reviewedById String?       @db.Uuid
   reviewedAt   DateTime?
   reviewNote   String?

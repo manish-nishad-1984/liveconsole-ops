@@ -18,7 +18,7 @@ export const paymentSelect = {
   referenceNo: true,
   notes: true,
   expenseId: true,
-  expense: { select: { id: true, expenseNo: true, status: true, deletedAt: true } },
+  expense: { select: { id: true, expenseNo: true, deletedAt: true } },
   createdAt: true,
   updatedAt: true,
   createdById: true,
