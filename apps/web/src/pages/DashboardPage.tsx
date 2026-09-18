@@ -198,6 +198,7 @@ const DashboardPage = () => {
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               <StatTile
                 icon={Truck}
+                surface="progress"
                 label="Vehicles on rent"
                 value={formatNumber(data.transport.onRent)}
                 hint={isCompany ? 'Across all sites' : 'In your charge'}
@@ -205,7 +206,7 @@ const DashboardPage = () => {
               />
               <StatTile
                 icon={AlertCircle}
-                tone={Number(data.transport.pending) > 0 ? 'danger' : 'default'}
+                surface="danger"
                 label="Vehicle rent to pay"
                 value={formatCurrency(data.transport.pending)}
                 hint="Rent due minus payments"

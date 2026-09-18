@@ -157,22 +157,25 @@ const StatementPage = () => {
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <StatTile
           icon={Wallet}
+          surface="info"
           label={params.from ? `Opening (${formatDateOnly(params.from)})` : 'Opening'}
           value={formatCurrency(data?.openingBalance ?? 0)}
         />
         <StatTile
           icon={ArrowUpRight}
-          tone="success"
+          surface="success"
           label="Received"
           value={formatCurrency(data?.totalCredit ?? 0)}
         />
         <StatTile
           icon={ArrowDownLeft}
+          surface="danger"
           label="Spent / returned"
           value={formatCurrency(data?.totalDebit ?? 0)}
         />
         <StatTile
           icon={Wallet}
+          surface="info"
           tone={Number(data?.closingBalance ?? 0) < 0 ? 'danger' : 'default'}
           label="Closing balance"
           value={formatCurrency(data?.closingBalance ?? 0)}

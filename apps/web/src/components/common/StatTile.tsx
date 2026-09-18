@@ -10,9 +10,10 @@ export interface StatTileProps {
   hint?: string;
   tone?: 'default' | 'success' | 'warning' | 'danger';
   /**
-   * Tints the whole tile, so a row of money figures reads by colour: received
-   * green, returned amber, spent red, balance blue. The icon takes the same hue
-   * unless `tone` asks for another (a negative balance stays red).
+   * Tints the whole tile, so figures read by colour on every screen: received
+   * green, returned amber, spent red, balance blue, vehicles out purple (the
+   * On rent badge's hue). The icon takes the same hue unless `tone` asks for
+   * another (a negative balance stays red).
    */
   surface?: Surface;
   /** Makes the whole tile a button — e.g. "filter to pending". */
@@ -21,7 +22,7 @@ export interface StatTileProps {
   className?: string;
 }
 
-type Surface = 'success' | 'warning' | 'danger' | 'info';
+type Surface = 'success' | 'warning' | 'danger' | 'info' | 'progress';
 
 const surfaceClasses: Record<Surface, { card: string; icon: string }> = {
   success: {
@@ -39,6 +40,10 @@ const surfaceClasses: Record<Surface, { card: string; icon: string }> = {
   info: {
     card: 'border-status-info/30 bg-status-info/10',
     icon: 'bg-status-info/15 text-status-info',
+  },
+  progress: {
+    card: 'border-status-progress/30 bg-status-progress/10',
+    icon: 'bg-status-progress/15 text-status-progress',
   },
 };
 

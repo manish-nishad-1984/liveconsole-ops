@@ -153,12 +153,14 @@ const BalancesListPage = () => {
         <div className="grid gap-3 sm:grid-cols-3">
           <StatTile
             icon={Wallet}
+            surface="info"
             label="Cash with employees"
             value={formatCurrency(totals.holding)}
             hint="Given, not yet spent or returned"
           />
           <StatTile
             icon={HandCoins}
+            surface="info"
             tone={totals.owed > 0 ? 'danger' : 'default'}
             label="Owed to employees"
             value={formatCurrency(totals.owed)}
@@ -166,6 +168,7 @@ const BalancesListPage = () => {
           />
           <StatTile
             icon={Receipt}
+            surface="danger"
             label="Total expenses"
             value={formatCurrency(totals.spent)}
             hint="Already deducted from balances"

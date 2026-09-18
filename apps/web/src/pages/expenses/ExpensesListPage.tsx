@@ -198,6 +198,7 @@ const ExpensesListPage = () => {
         <div className="grid gap-3 sm:grid-cols-3">
           <StatTile
             icon={Receipt}
+            surface="danger"
             label={list.hasActiveFilters ? 'Total (filtered)' : 'Total expenses'}
             value={formatCurrency(query.data?.totals.amount ?? 0)}
             hint={formatNumber(query.data?.totals.count ?? 0) + ' expenses'}

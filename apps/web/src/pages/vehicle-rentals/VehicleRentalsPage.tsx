@@ -257,6 +257,7 @@ const VehicleRentalsPage = () => {
         <div className="grid gap-3 sm:grid-cols-3">
           <StatTile
             icon={Truck}
+            surface="progress"
             label="Vehicles on rent"
             value={formatNumber(summary?.onRent ?? 0)}
             hint={`${formatNumber(summary?.count ?? 0)} rentals in this list`}
@@ -270,7 +271,7 @@ const VehicleRentalsPage = () => {
           />
           <StatTile
             icon={CheckCircle2}
-            tone="success"
+            surface="success"
             label="Total rent paid"
             value={formatCurrency(summary?.paid ?? 0)}
             hint={`of ${formatCurrency(summary?.rentDue ?? 0)} rent${
@@ -279,7 +280,7 @@ const VehicleRentalsPage = () => {
           />
           <StatTile
             icon={AlertCircle}
-            tone="danger"
+            surface="danger"
             label="Total pending rent"
             value={formatCurrency(summary?.pending ?? 0)}
             hint="Tap to see unpaid"
