@@ -53,11 +53,12 @@ const scope = () => employeeScope('cash_book:manage');
 
 export const list = async (query: CashEntryListQueryInput): Promise<CashBookListDto> => {
   const organizationId = requireOrg();
-  const { items, total, page, pageSize, totals } = await repository.listCashEntries(
-    organizationId,
-    query,
-    scope(),
-  );
+  const [{ items, total, page, pageSize, totals }, spent] = await Promise.all([
+    repository.listCashEntries(organizationId, query, scope()),
+    // Bills follow the expense permission, not the cash book one, so a caller
+    // never sees a total over expenses they could not list.
+    repository.sumExpenses(organizationId, query, employeeScope('expenses:manage')),
+  ]);
 
   const given = toDecimal(totals.find((row) => row.type === 'GIVEN')?._sum.amount);
   const returned = toDecimal(totals.find((row) => row.type === 'RETURNED')?._sum.amount);
@@ -69,6 +70,8 @@ export const list = async (query: CashEntryListQueryInput): Promise<CashBookList
       given: money(given),
       returned: money(returned),
       net: money(given.minus(returned)),
+      expenses: money(toDecimal(spent._sum.amount)),
+      expenseCount: spent._count._all,
     },
   };
 };

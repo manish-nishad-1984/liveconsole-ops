@@ -41,9 +41,19 @@ export interface CashEntryDto extends AuditFields {
   handledBy: PersonRef;
 }
 
-/** The cash book list, with totals for the whole filtered set (not just the page). */
+/**
+ * The cash book list, with totals for the whole filtered set (not just the page).
+ * `expenses` is the bills filed over the same employee, site and dates, so the
+ * cash book can show what was spent beside what was given.
+ */
 export interface CashBookListDto extends Paginated<CashEntryDto> {
-  totals: { given: MoneyString; returned: MoneyString; net: MoneyString };
+  totals: {
+    given: MoneyString;
+    returned: MoneyString;
+    net: MoneyString;
+    expenses: MoneyString;
+    expenseCount: number;
+  };
 }
 
 export interface CashEntryRequest {

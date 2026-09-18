@@ -55,7 +55,11 @@ const TONE_RULES: { tone: StatusTone; keywords: string[] }[] = [
       'GIVEN',
     ],
   },
-  { tone: 'warning', keywords: ['WARNING', 'LOCKED', 'HOLD', 'PARTIAL', 'BLOCKED', 'ATTENTION'] },
+  {
+    tone: 'warning',
+    // RETURNED is amber, not blue: blue is the balance colour on the dashboard.
+    keywords: ['WARNING', 'LOCKED', 'HOLD', 'PARTIAL', 'BLOCKED', 'ATTENTION', 'RETURNED'],
+  },
   {
     tone: 'progress',
     keywords: ['IN_PROGRESS', 'PROCESSING', 'RUNNING', 'ONGOING', 'STARTED', 'ON_RENT'],
@@ -69,7 +73,6 @@ const TONE_RULES: { tone: StatusTone; keywords: string[] }[] = [
       'SCHEDULED',
       'QUEUED',
       'REVIEW',
-      'RETURNED',
       'UPCOMING',
     ],
   },

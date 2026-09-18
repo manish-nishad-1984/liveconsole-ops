@@ -80,6 +80,34 @@ export const listCashEntries = async (
   return { items, total, page, pageSize, totals };
 };
 
+/**
+ * Expenses over the same employee, site and dates as the cash book filters. Type,
+ * mode and search describe cash entries, not bills, so they do not narrow this.
+ * `employeeScope` here is the expense scope — whose bills the caller may see.
+ */
+export const sumExpenses = (
+  organizationId: string,
+  query: CashEntryListQueryInput,
+  employeeScope: string | null,
+) =>
+  prisma.expense.aggregate({
+    where: and(
+      { organizationId, deletedAt: null },
+      employeeScope ? { employeeId: employeeScope } : equals('employeeId', query.employeeId),
+      equals('siteId', query.siteId),
+      query.from || query.to
+        ? {
+            expenseDate: {
+              ...(query.from ? { gte: parseDateOnly(query.from) } : {}),
+              ...(query.to ? { lte: parseDateOnly(query.to) } : {}),
+            },
+          }
+        : undefined,
+    ) as Prisma.ExpenseWhereInput,
+    _sum: { amount: true },
+    _count: { _all: true },
+  });
+
 export const listAllCashEntries = (
   organizationId: string,
   query: CashEntryListQueryInput,

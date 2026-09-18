@@ -5,6 +5,7 @@ import {
   AlertCircle,
   ArrowDownLeft,
   ArrowRight,
+  ArrowUpRight,
   CalendarDays,
   Plus,
   Receipt,
@@ -135,29 +136,36 @@ const DashboardPage = () => {
         <ErrorState error={error} onRetry={() => void refetch()} />
       ) : data ? (
         <>
-          {/* An employee is shown their running totals — received, spent, and what
-              is left after it — because that is the question they open this screen
-              with. The company view keeps the same figures rolled up. */}
+          {/* An employee is shown their running totals — received, returned, spent,
+              and what is left after it — because that is the question they open this
+              screen with. The company view keeps the same figures rolled up. Each
+              figure keeps one colour wherever it appears: received green, returned
+              amber, spent red, balance blue. */}
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <StatTile
               icon={ArrowDownLeft}
-              tone="success"
+              surface="success"
               label={isCompany ? 'Total given' : 'Total received'}
               value={formatCurrency(data.totals.cashGiven)}
-              hint={
-                Number(data.totals.cashReturned) > 0
-                  ? `${formatCurrency(data.totals.cashReturned)} returned`
-                  : 'Cash and UPI, all time'
-              }
+              hint="Cash and UPI, all time"
+            />
+            <StatTile
+              icon={ArrowUpRight}
+              surface="warning"
+              label="Total returned"
+              value={formatCurrency(data.totals.cashReturned)}
+              hint={isCompany ? 'Handed back by employees' : 'Handed back to the office'}
             />
             <StatTile
               icon={Receipt}
+              surface="danger"
               label="Total expense"
               value={formatCurrency(data.totals.expenses)}
               hint={formatNumber(data.totals.expenseCount) + ' bills'}
             />
             <StatTile
               icon={Wallet}
+              surface="info"
               tone={Number(data.totals.balance) < 0 ? 'danger' : 'default'}
               label={isCompany ? 'Cash with employees' : 'Balance'}
               value={formatCurrency(data.totals.balance)}
@@ -174,11 +182,13 @@ const DashboardPage = () => {
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <StatTile
               icon={CalendarDays}
+              surface="success"
               label={isCompany ? `Given in ${monthName}` : `Received in ${monthName}`}
               value={formatCurrency(data.thisMonth.cashGiven)}
             />
             <StatTile
               icon={Receipt}
+              surface="danger"
               label={`Spent in ${monthName}`}
               value={formatCurrency(data.thisMonth.expenses)}
             />

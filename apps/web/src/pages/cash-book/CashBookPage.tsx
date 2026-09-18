@@ -1,4 +1,4 @@
-import { formatCurrency } from '@liveconsole-ops/shared';
+import { formatCurrency, formatNumber } from '@liveconsole-ops/shared';
 import type { CashEntryDto } from '@liveconsole-ops/types';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { ColumnDef } from '@tanstack/react-table';
@@ -9,6 +9,7 @@ import {
   MoreHorizontal,
   Pencil,
   Plus,
+  Receipt,
   Trash2,
   Wallet,
 } from 'lucide-react';
@@ -133,7 +134,7 @@ const CashBookPage = () => {
           <span
             className={cn(
               'numeric text-sm font-semibold',
-              row.original.type === 'RETURNED' && 'text-status-info',
+              row.original.type === 'RETURNED' && 'text-status-warning',
             )}
           >
             {row.original.type === 'RETURNED' ? '−' : ''}
@@ -260,21 +261,30 @@ const CashBookPage = () => {
         </>
       }
       summary={
-        <div className="grid gap-3 sm:grid-cols-3">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <StatTile
             icon={ArrowUpRight}
-            tone="success"
+            surface="success"
             label={seeAll ? 'Given' : 'Received'}
             value={formatCurrency(totals?.given ?? 0)}
             hint={list.hasActiveFilters ? 'For the current filters' : 'All time'}
           />
           <StatTile
             icon={ArrowDownLeft}
+            surface="warning"
             label="Returned"
             value={formatCurrency(totals?.returned ?? 0)}
           />
           <StatTile
+            icon={Receipt}
+            surface="danger"
+            label="Total expense"
+            value={formatCurrency(totals?.expenses ?? 0)}
+            hint={`${formatNumber(totals?.expenseCount ?? 0)} bills`}
+          />
+          <StatTile
             icon={Wallet}
+            surface="info"
             label="Net"
             value={formatCurrency(totals?.net ?? 0)}
             hint="Given − returned"
