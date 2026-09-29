@@ -26,6 +26,8 @@ export interface RequestContext {
    * decisions *inside* a permitted request.
    */
   permissions: ReadonlySet<PermissionKey>;
+  /** Role slugs the actor holds, for the few rules written against a role rather than a permission. */
+  roles: ReadonlySet<string>;
   isSuperAdmin: boolean;
   ipAddress: string | null;
   userAgent: string | null;
@@ -73,6 +75,7 @@ export const setContextActor = (
   organizationId: string,
   permissions: ReadonlySet<PermissionKey> = new Set(),
   isSuperAdmin = false,
+  roles: ReadonlySet<string> = new Set(),
 ): void => {
   const context = storage.getStore();
   if (context) {
@@ -81,7 +84,20 @@ export const setContextActor = (
     context.organizationId = organizationId;
     context.permissions = permissions;
     context.isSuperAdmin = isSuperAdmin;
+    context.roles = roles;
   }
+};
+
+/**
+ * Whether the actor is an administrator — the platform owner flag, or one of the
+ * two seeded administrator roles. Rules that exempt "the office" from a limit
+ * placed on site staff ask this; anything about *what* a user may do still asks
+ * `actorCan`.
+ */
+export const actorIsAdmin = (): boolean => {
+  const context = storage.getStore();
+  if (!context) return false;
+  return context.isSuperAdmin || context.roles.has('admin') || context.roles.has('super_admin');
 };
 
 /** Audit columns for a create, filled from ambient context. */

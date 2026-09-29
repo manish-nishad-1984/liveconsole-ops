@@ -30,6 +30,7 @@ const CashBookPage = lazy(() => import('@/pages/cash-book/CashBookPage'));
 const BalancesRoutes = lazy(() => import('@/pages/balances/BalancesRoutes'));
 const VehicleRentalsPage = lazy(() => import('@/pages/vehicle-rentals/VehicleRentalsPage'));
 const SitesListPage = lazy(() => import('@/pages/sites/SitesListPage'));
+const SettingsPage = lazy(() => import('@/pages/settings/SettingsPage'));
 const ExpenseCategoriesPage = lazy(
   () => import('@/pages/expense-categories/ExpenseCategoriesPage'),
 );
@@ -50,6 +51,7 @@ const MODULE_PAGES: Partial<Record<ModuleKey, ModulePage>> = {
   transport: VehicleRentalsPage,
   sites: SitesListPage,
   expense_categories: ExpenseCategoriesPage,
+  company_settings: SettingsPage,
 };
 
 export const moduleRoutes: RouteObject[] = MODULES.map((module) => {

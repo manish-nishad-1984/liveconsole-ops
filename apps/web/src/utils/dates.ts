@@ -17,3 +17,14 @@ export const formatDateOnly = (value: string | null | undefined): string => {
     timeZone: 'UTC',
   }).format(new Date(Date.UTC(year, month - 1, day)));
 };
+
+/**
+ * The oldest date an expense may carry, "YYYY-MM-DD", given how many days back
+ * the office allows. `days` counts today as 0, so 2 reaches the day before
+ * yesterday. Administrators are not bound by it — pass `null` there.
+ */
+export const earliestIso = (days: number): string => {
+  const [year, month, day] = todayIso().split('-').map(Number);
+  const date = new Date(Date.UTC(year!, month! - 1, day! - days));
+  return date.toISOString().slice(0, 10);
+};

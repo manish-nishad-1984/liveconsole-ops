@@ -10,6 +10,7 @@ import { buildPaginationMeta } from '../../lib/pagination.js';
 import { prisma } from '../../lib/prisma.js';
 import {
   actorCan,
+  actorIsAdmin,
   auditCreate,
   auditUpdate,
   getActorId,
@@ -18,6 +19,10 @@ import {
 import { deleteFile, fileExists, openFile, saveFile } from '../../lib/storage.js';
 import { diffRecords, recordAudit } from '../../services/audit.service.js';
 import { employeeScope, findActiveEmployee } from '../../services/ledger.service.js';
+import {
+  DEFAULT_EXPENSE_BACKDATE_DAYS,
+  expenseBackdateDays,
+} from '../settings/settings.service.js';
 import * as repository from './expenses.repository.js';
 import type { AttachmentRecord, ExpenseRecord } from './expenses.repository.js';
 import type {
@@ -47,7 +52,55 @@ const isEditable = (expense: { employeeId: string }, action: 'update' | 'delete'
   return actorCan('expenses:manage') || expense.employeeId === getActorId();
 };
 
-const toDto = (expense: ExpenseRecord, attachmentCount = 0): ExpenseDto => ({
+/* ------------------------------------------------------------------ */
+/* What site staff may still change                                    */
+/*                                                                     */
+/* An expense reduces a balance the moment it is filed, so an employee  */
+/* cannot keep reaching back into settled days. Two limits, both lifted */
+/* for an administrator, who is the one people go to when either bites: */
+/*                                                                     */
+/*   • the date must fall inside the backdating window an administrator */
+/*     sets (today counts as 0, so 2 = today, yesterday, the day        */
+/*     before) — on filing, on editing, and on the new date of an edit; */
+/*   • an expense can only be deleted within an hour of being filed.    */
+/*     After that the amount has been read and acted on, and deleting   */
+/*     it is a correction the office should see.                        */
+/* ------------------------------------------------------------------ */
+
+const DELETE_WINDOW_MS = 60 * 60 * 1000;
+
+/** Oldest date an ordinary employee may file or keep, as "YYYY-MM-DD". */
+const earliestDate = (backdateDays: number): string => {
+  const today = parseDateOnly(todayInIndia());
+  today.setUTCDate(today.getUTCDate() - backdateDays);
+  return formatDateOnly(today);
+};
+
+const withinBackdateWindow = (date: string, backdateDays: number): boolean =>
+  date >= earliestDate(backdateDays);
+
+const describeWindow = (backdateDays: number): string =>
+  backdateDays === 0
+    ? 'today'
+    : backdateDays === 1
+      ? 'today or yesterday'
+      : `the last ${backdateDays + 1} days (from ${earliestDate(backdateDays)})`;
+
+const assertWithinBackdateWindow = (date: string, backdateDays: number) => {
+  if (actorIsAdmin() || withinBackdateWindow(date, backdateDays)) return;
+  throw new BusinessRuleError(
+    `An expense can only be dated within ${describeWindow(backdateDays)}. Ask an administrator to add an older one.`,
+  );
+};
+
+const isDeletableByOwner = (expense: { createdAt: Date }): boolean =>
+  actorIsAdmin() || Date.now() - expense.createdAt.getTime() <= DELETE_WINDOW_MS;
+
+const toDto = (
+  expense: ExpenseRecord,
+  attachmentCount = 0,
+  backdateDays = DEFAULT_EXPENSE_BACKDATE_DAYS,
+): ExpenseDto => ({
   id: expense.id,
   expenseNo: expense.expenseNo,
   employee: expense.employee,
@@ -59,7 +112,12 @@ const toDto = (expense: ExpenseRecord, attachmentCount = 0): ExpenseDto => ({
   paidTo: expense.paidTo,
   description: expense.description,
   attachmentCount,
-  canEdit: !expense.rentPayment && isEditable(expense, 'update'),
+  canEdit:
+    !expense.rentPayment &&
+    isEditable(expense, 'update') &&
+    (actorIsAdmin() || withinBackdateWindow(formatDateOnly(expense.expenseDate), backdateDays)),
+  canDelete:
+    !expense.rentPayment && isEditable(expense, 'delete') && isDeletableByOwner(expense),
   rentPayment: expense.rentPayment
     ? {
         id: expense.rentPayment.id,
@@ -92,11 +150,12 @@ const toAttachmentDto = (attachment: AttachmentRecord): AttachmentDto => ({
 
 /** Maps a list of records to DTOs with their attachment counts in one query. */
 export const toDtos = async (organizationId: string, expenses: ExpenseRecord[]) => {
+  const backdateDays = await expenseBackdateDays(organizationId);
   const counts = await repository.countAttachmentsByExpense(
     organizationId,
     expenses.map((expense) => expense.id),
   );
-  return expenses.map((expense) => toDto(expense, counts.get(expense.id) ?? 0));
+  return expenses.map((expense) => toDto(expense, counts.get(expense.id) ?? 0, backdateDays));
 };
 
 /* ------------------------------------------------------------------ */
@@ -130,7 +189,7 @@ export const getById = async (id: string): Promise<ExpenseDto> => {
   const expense = await loadVisible(organizationId, id);
   const attachments = await repository.listAttachments(organizationId, id);
   return {
-    ...toDto(expense, attachments.length),
+    ...toDto(expense, attachments.length, await expenseBackdateDays(organizationId)),
     attachments: attachments.map(toAttachmentDto),
   };
 };
@@ -166,6 +225,7 @@ export const create = async (input: ExpenseInput): Promise<ExpenseDto> => {
   const employeeId = input.employeeId && actorCan('expenses:manage') ? input.employeeId : actorId;
 
   assertNotFuture(input.expenseDate);
+  assertWithinBackdateWindow(input.expenseDate, await expenseBackdateDays(organizationId));
   await assertReferences(organizationId, {
     employeeId: employeeId === actorId ? undefined : employeeId,
     siteId: input.siteId,
@@ -210,7 +270,7 @@ export const create = async (input: ExpenseInput): Promise<ExpenseDto> => {
     return createdExpense;
   });
 
-  return toDto(expense);
+  return toDto(expense, 0, await expenseBackdateDays(organizationId));
 };
 
 export const update = async (id: string, input: UpdateExpenseInput): Promise<ExpenseDto> => {
@@ -229,7 +289,14 @@ export const update = async (id: string, input: UpdateExpenseInput): Promise<Exp
     throw new ForbiddenError('You cannot move an expense to another employee');
   }
 
-  if (input.expenseDate) assertNotFuture(input.expenseDate);
+  const backdateDays = await expenseBackdateDays(organizationId);
+  // Both ends: an old expense cannot be reopened for editing, and an editable one
+  // cannot be pushed back out of the window.
+  assertWithinBackdateWindow(formatDateOnly(existing.expenseDate), backdateDays);
+  if (input.expenseDate) {
+    assertNotFuture(input.expenseDate);
+    assertWithinBackdateWindow(input.expenseDate, backdateDays);
+  }
   await assertReferences(organizationId, {
     employeeId: input.employeeId !== existing.employeeId ? input.employeeId : undefined,
     siteId: input.siteId !== existing.siteId ? input.siteId : undefined,
@@ -264,7 +331,7 @@ export const update = async (id: string, input: UpdateExpenseInput): Promise<Exp
   });
 
   const attachments = await repository.countAttachmentsByExpense(organizationId, [id]);
-  return toDto(expense, attachments.get(id) ?? 0);
+  return toDto(expense, attachments.get(id) ?? 0, backdateDays);
 };
 
 export const remove = async (id: string): Promise<ExpenseDto> => {
@@ -274,6 +341,11 @@ export const remove = async (id: string): Promise<ExpenseDto> => {
 
   if (!isEditable(existing, 'delete')) {
     throw new ForbiddenError('You can only delete your own expenses');
+  }
+  if (!isDeletableByOwner(existing)) {
+    throw new BusinessRuleError(
+      `${existing.expenseNo} was filed more than an hour ago and can no longer be deleted here. Ask an administrator to remove it.`,
+    );
   }
 
   const expense = await repository.updateExpense(id, {
@@ -290,7 +362,7 @@ export const remove = async (id: string): Promise<ExpenseDto> => {
     changes: { amount: { from: money(existing.amount), to: null } },
   });
 
-  return toDto(expense);
+  return toDto(expense, 0, await expenseBackdateDays(organizationId));
 };
 
 /* ------------------------------------------------------------------ */

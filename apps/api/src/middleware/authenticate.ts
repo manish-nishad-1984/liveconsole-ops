@@ -88,7 +88,14 @@ export const authenticate: RequestHandler = async (req, _res, next) => {
       tokenVersion: user.tokenVersion,
     };
 
-    setContextActor(user.id, user.email, user.organizationId, permissions, user.isSuperAdmin);
+    setContextActor(
+      user.id,
+      user.email,
+      user.organizationId,
+      permissions,
+      user.isSuperAdmin,
+      new Set(roles),
+    );
     next();
   } catch (error) {
     next(error);

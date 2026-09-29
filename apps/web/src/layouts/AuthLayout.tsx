@@ -1,18 +1,18 @@
+import { APP_NAME } from '@liveconsole-ops/shared';
 import { Suspense } from 'react';
 import { Outlet } from 'react-router-dom';
 import { CheckCircle2, Truck, Wallet } from 'lucide-react';
 
-import { BrandLogo } from '@/components/common/BrandLogo';
 import { LoadingState } from '@/components/common/LoadingState';
 
 /**
  * Shell for the unauthenticated screens (sign in, forgot password, reset).
  *
  * Split layout: the form on the left keeps focus where the work is, and the
- * right-hand panel — hidden below `lg` — carries the identity without competing
- * with it. The panel is always dark, whatever the theme, because that is the
- * surface the LiveConsole logo is drawn for; the logo's red → orange → amber
- * gradient glows behind it as blurred shapes rather than as a background image.
+ * right-hand panel — hidden below `lg` — says what the app is for without
+ * competing with it. There is no logo and no company name anywhere on it: the
+ * panel is a dark ground with the accent colours glowing behind as blurred
+ * shapes, so nothing here identifies whose installation this is.
  */
 
 const HEADLINE = 'Site cash and vehicles, accounted for.';
@@ -41,12 +41,8 @@ export const AuthLayout = () => (
   <div className="grid min-h-screen lg:grid-cols-2">
     <div className="flex flex-col justify-center px-6 py-10 sm:px-12">
       <div className="mx-auto w-full max-w-sm">
-        <div className="mb-8 flex items-center gap-3">
-          <BrandLogo className="h-12" />
-          <span aria-hidden className="h-6 w-px bg-border" />
-          <span className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-            Ops
-          </span>
+        <div className="mb-8">
+          <span className="text-base font-semibold tracking-tight">{APP_NAME}</span>
         </div>
 
         {/* Its own boundary, inside the branded shell: the logo and panel stay put
@@ -73,8 +69,10 @@ export const AuthLayout = () => (
       />
 
       <div className="relative p-12">
-        <BrandLogo surface="dark" className="h-14" />
-        <h2 className="mt-10 max-w-md text-3xl font-semibold leading-tight">{HEADLINE}</h2>
+        <span className="text-sm font-semibold uppercase tracking-[0.18em] text-white/60">
+          {APP_NAME}
+        </span>
+        <h2 className="mt-8 max-w-md text-3xl font-semibold leading-tight">{HEADLINE}</h2>
         <p className="mt-4 max-w-md text-sm leading-relaxed text-white/75">{SUBCOPY}</p>
       </div>
 

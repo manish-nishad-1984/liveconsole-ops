@@ -35,3 +35,17 @@ export const useCan = (permission: PermissionKey): boolean =>
 
 export const useCanAccessModule = (moduleKey: ModuleKey): boolean =>
   usePermissions().canAccessModule(moduleKey);
+
+/**
+ * Whether the signed-in user is an administrator — mirrors `actorIsAdmin` in the
+ * API. Only for the handful of rules written against a role rather than a
+ * permission, such as the expense backdating window administrators are exempt
+ * from; everything about *what* a user may do still asks `useCan`.
+ */
+export const useIsAdmin = (): boolean => {
+  const user = useAuthStore((state) => state.user);
+  if (!user) return false;
+  return (
+    user.isSuperAdmin || user.roles.some((role) => ['admin', 'super_admin'].includes(role.slug))
+  );
+};

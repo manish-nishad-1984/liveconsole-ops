@@ -121,6 +121,9 @@ export const queryKeys = {
    * from petty cash is an expense, so reviewing that expense changes what a rental
    * shows as paid, and recording a payment changes balances and the dashboard.
    */
+  settings: {
+    all: ['settings'] as const,
+  },
   transport: {
     all: ['petty-cash', 'vehicle-rentals'] as const,
     list: (params: object) => ['petty-cash', 'vehicle-rentals', 'list', params] as const,

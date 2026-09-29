@@ -1,6 +1,6 @@
 /** Cross-cutting constants. Anything a magic number would otherwise be. */
 
-export const APP_NAME = 'LiveConsole Ops';
+export const APP_NAME = 'Petty Cash & Transport';
 export const APP_SLUG = 'liveconsole-ops';
 
 export const DEFAULT_CURRENCY = 'INR';

@@ -95,8 +95,10 @@ export interface ExpenseDto extends AuditFields {
   attachmentCount: number;
   /** Populated on the detail endpoint only. */
   attachments?: AttachmentDto[];
-  /** Whether the caller may still edit / delete this expense. */
+  /** Whether the caller may still edit this expense — permission *and* the backdating window. */
   canEdit: boolean;
+  /** Employees lose this an hour after filing; an administrator keeps it. */
+  canDelete: boolean;
   /** Set when a vehicle rent payment created this expense — it is changed there. */
   rentPayment: { id: UUID; rentalId: UUID; rentalNo: string } | null;
 }

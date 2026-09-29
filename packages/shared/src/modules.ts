@@ -147,6 +147,17 @@ export const MODULES: ModuleDefinition[] = [
     description: 'Permission sets.',
   },
   {
+    key: 'company_settings',
+    label: 'Settings',
+    singular: 'Setting',
+    path: '/settings',
+    icon: 'Settings',
+    group: 'admin',
+    order: 93,
+    permission: 'company_settings:view',
+    description: 'Rules the office can change without a release.',
+  },
+  {
     key: 'audit_logs',
     label: 'Audit Log',
     singular: 'Audit Entry',

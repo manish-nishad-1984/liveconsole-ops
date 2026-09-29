@@ -1,7 +1,6 @@
 import { APP_NAME } from '@liveconsole-ops/shared';
 import { Link } from 'react-router-dom';
 
-import { BrandLogo, BrandMark } from '@/components/common/BrandLogo';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { SidebarNav } from '@/layouts/SidebarNav';
@@ -15,25 +14,26 @@ import { cn } from '@/lib/utils';
  * `collapsed` flag differ — the tree itself is built once, in `SidebarNav`.
  */
 
+/**
+ * The app's name, set in words rather than as a logo: this deployment carries no
+ * company mark at all, so there is no image to load and nothing that identifies
+ * whose installation it is.
+ */
 const Brand = ({ collapsed = false }: { collapsed?: boolean }) => (
   <Link
     to={ROUTES.dashboard}
     aria-label={APP_NAME}
     className={cn(
-      'flex h-topbar shrink-0 items-center gap-3 border-b border-border px-4',
+      'flex h-topbar shrink-0 items-center border-b border-border px-4',
       collapsed && 'justify-center px-0',
     )}
   >
     {collapsed ? (
-      <BrandMark className="size-8" />
+      <span aria-hidden className="text-sm font-semibold tracking-tight text-primary">
+        PC
+      </span>
     ) : (
-      <>
-        <BrandLogo className="h-9" />
-        <span aria-hidden className="h-5 w-px bg-border" />
-        <span className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-          Ops
-        </span>
-      </>
+      <span className="truncate text-sm font-semibold tracking-tight">{APP_NAME}</span>
     )}
   </Link>
 );

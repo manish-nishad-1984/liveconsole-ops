@@ -112,7 +112,7 @@ export const ExpenseDetailSheet = ({
                     Edit
                   </Button>
                 ) : null}
-                {expense.canEdit && canDelete ? (
+                {expense.canDelete && canDelete ? (
                   <Button
                     variant="ghost"
                     size="sm"

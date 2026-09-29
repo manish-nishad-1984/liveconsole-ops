@@ -39,3 +39,18 @@ export interface OptionDto {
   /** Secondary line — location, mobile, designation. */
   hint: string | null;
 }
+
+/**
+ * Tenant settings an administrator may change without a release.
+ * `expenseBackdateDays` counts today as 0: 2 means today, yesterday and the day
+ * before are open to an ordinary employee.
+ */
+export interface OrgSettingsDto {
+  expenseBackdateDays: number;
+  /** Upper bound the API will accept, so the form can say so before submitting. */
+  maxExpenseBackdateDays: number;
+}
+
+export interface OrgSettingsRequest {
+  expenseBackdateDays?: number;
+}

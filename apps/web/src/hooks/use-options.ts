@@ -4,6 +4,7 @@ import { queryKeys } from '@/lib/query-client';
 import {
   employeesService,
   expenseCategoriesService,
+  settingsService,
   sitesService,
 } from '@/services/masters.service';
 
@@ -34,6 +35,19 @@ export const useEmployeeOptions = (enabled = true) =>
   useQuery({
     queryKey: queryKeys.employees.options,
     queryFn: () => employeesService.options(),
+    staleTime: OPTIONS_STALE_MS,
+    enabled,
+  });
+
+/**
+ * Tenant settings. The expense form needs the backdating window to set its date
+ * picker's lower bound, so this is fetched wherever that form is, not only on
+ * the settings screen.
+ */
+export const useOrgSettings = (enabled = true) =>
+  useQuery({
+    queryKey: queryKeys.settings.all,
+    queryFn: () => settingsService.get(),
     staleTime: OPTIONS_STALE_MS,
     enabled,
   });

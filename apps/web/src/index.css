@@ -14,12 +14,11 @@
  * The `--status-*` scale is deliberately brand-neutral: green must mean "good"
  * regardless of what colour the company happens to be.
  *
- * Brand: the LiveConsole mark is a red → orange → amber gradient (`--brand-*`,
- * sampled from the logo). Those exact colours are too light to carry white text,
- * so `--primary` is a deeper orange of the same hue that does (4.7:1 in light;
- * dark mode flips to a bright orange with dark text on it). Neutrals lean warm so
- * the greys sit with the orange instead of against it, and `--status-warning` is
- * pushed towards yellow so a PENDING badge never reads as a brand-coloured button.
+ * Accent: a red → orange → amber set (`--brand-*`). Those exact colours are too
+ * light to carry white text, so `--primary` is a deeper orange of the same hue
+ * that does (4.7:1 in light; dark mode flips to a bright orange with dark text on
+ * it). Neutrals lean warm so the greys sit with the orange instead of against it,
+ * and `--status-warning` is pushed towards yellow so it never reads as a button.
  */
 @layer base {
   :root {

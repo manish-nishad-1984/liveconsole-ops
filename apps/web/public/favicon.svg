@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <!-- Deliberately generic: a ledger, no letters, no mark that identifies anyone. -->
+  <rect width="32" height="32" rx="7" fill="#c74c0f" />
+  <g fill="none" stroke="#ffffff" stroke-width="2.4" stroke-linecap="round">
+    <path d="M10 11h12" />
+    <path d="M10 16h12" />
+    <path d="M10 21h7" />
+  </g>
+</svg>

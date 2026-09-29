@@ -16,8 +16,13 @@ import { Segmented } from '@/components/common/Segmented';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { useCategoryOptions, useEmployeeOptions, useSiteOptions } from '@/hooks/use-options';
-import { useCan } from '@/hooks/use-permissions';
+import {
+  useCategoryOptions,
+  useEmployeeOptions,
+  useOrgSettings,
+  useSiteOptions,
+} from '@/hooks/use-options';
+import { useCan, useIsAdmin } from '@/hooks/use-permissions';
 import { formatFileSize, prepareUpload } from '@/lib/image';
 import { PAYMENT_MODE_LABELS } from '@/lib/labels';
 import { queryKeys } from '@/lib/query-client';
@@ -25,7 +30,7 @@ import { ReceiptGallery } from '@/pages/expenses/ReceiptGallery';
 import { QuickAddDialogs, useQuickAdd } from '@/pages/quick-add/QuickAddDialogs';
 import { expensesService } from '@/services/petty-cash.service';
 import { useAuthStore } from '@/store/auth.store';
-import { todayIso } from '@/utils/dates';
+import { earliestIso, formatDateOnly, todayIso } from '@/utils/dates';
 import { applyFieldErrors, getErrorMessage } from '@/utils/errors';
 
 /**
@@ -66,6 +71,7 @@ export const ExpenseFormModal = ({ open, onOpenChange, expense }: ExpenseFormMod
   const queryClient = useQueryClient();
   const me = useAuthStore((state) => state.user);
   const canManage = useCan('expenses:manage');
+  const isAdmin = useIsAdmin();
   const [formError, setFormError] = useState<string | null>(null);
   const [queued, setQueued] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
@@ -76,6 +82,11 @@ export const ExpenseFormModal = ({ open, onOpenChange, expense }: ExpenseFormMod
   const sites = useSiteOptions(open);
   const categories = useCategoryOptions(open);
   const employees = useEmployeeOptions(open && canManage);
+  const settings = useOrgSettings(open && !isAdmin);
+  const earliestAllowed =
+    isAdmin || settings.data === undefined
+      ? undefined
+      : earliestIso(settings.data.expenseBackdateDays);
 
   // Existing receipts, when editing.
   const detail = useQuery({
@@ -255,9 +266,22 @@ export const ExpenseFormModal = ({ open, onOpenChange, expense }: ExpenseFormMod
             )}
           </FormField>
 
-          <FormField label="Date" error={errors.expenseDate?.message} required>
+          <FormField
+            label="Date"
+            error={errors.expenseDate?.message}
+            hint={earliestAllowed ? `Not before ${formatDateOnly(earliestAllowed)}` : undefined}
+            required
+          >
             {(props) => (
-              <Input {...props} {...register('expenseDate')} type="date" max={todayIso()} />
+              <Input
+                {...props}
+                {...register('expenseDate')}
+                type="date"
+                max={todayIso()}
+                // The office sets how far back staff may file; administrators,
+                // who fix what falls outside it, get no lower bound.
+                min={earliestAllowed}
+              />
             )}
           </FormField>
 

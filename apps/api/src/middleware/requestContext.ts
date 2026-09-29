@@ -22,6 +22,7 @@ export const requestContext: RequestHandler = (req, res, next) => {
       // Filled in by `authenticate`. Empty until then, so an unauthenticated
       // request can never be mistaken for one that holds everything.
       permissions: new Set(),
+      roles: new Set(),
       isSuperAdmin: false,
       ipAddress: req.ip ?? null,
       userAgent: req.headers['user-agent'] ?? null,

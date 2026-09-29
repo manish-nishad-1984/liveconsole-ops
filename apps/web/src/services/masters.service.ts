@@ -2,6 +2,8 @@ import type {
   ExpenseCategoryDto,
   ExpenseCategoryRequest,
   OptionDto,
+  OrgSettingsDto,
+  OrgSettingsRequest,
   SiteDto,
   SiteRequest,
 } from '@liveconsole-ops/types';
@@ -25,6 +27,11 @@ export const expenseCategoriesService = {
   update: (id: string, payload: Partial<ExpenseCategoryRequest>) =>
     api.patch<ExpenseCategoryDto>(`/expense-categories/${id}`, payload),
   remove: (id: string) => api.delete<ExpenseCategoryDto>(`/expense-categories/${id}`),
+};
+
+export const settingsService = {
+  get: () => api.get<OrgSettingsDto>('/settings'),
+  update: (payload: OrgSettingsRequest) => api.patch<OrgSettingsDto>('/settings', payload),
 };
 
 export const employeesService = {
