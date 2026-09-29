@@ -6,7 +6,7 @@ import type {
   RentPaymentStatus,
   RentalStatus,
 } from '../enums.js';
-import type { DateOnlyString, MoneyString, NamedRef, PersonRef } from './petty-cash.dto.js';
+import type { DateOnlyString, MoneyString, PersonRef } from './petty-cash.dto.js';
 
 /**
  * Transport contracts — vehicles hired for a site and the rent paid for them.
@@ -35,7 +35,7 @@ export interface VehicleRentalDto extends AuditFields {
   id: UUID;
   rentalNo: string;
   employee: PersonRef;
-  site: NamedRef | null;
+  siteName: string | null;
   vehicleType: string;
   vehicleNumber: string | null;
   vendorName: string;
@@ -79,7 +79,7 @@ export interface VehicleRentalListDto extends Paginated<VehicleRentalDto> {
 export interface VehicleRentalRequest {
   /** Only honoured for callers with `transport:manage`; otherwise the caller. */
   employeeId?: UUID | null;
-  siteId?: UUID | null;
+  siteName?: string | null;
   vehicleType: string;
   vehicleNumber?: string | null;
   vendorName: string;

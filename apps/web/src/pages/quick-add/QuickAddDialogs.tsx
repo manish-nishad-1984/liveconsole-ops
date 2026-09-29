@@ -5,7 +5,6 @@ import { useState } from 'react';
 import { usePermissions } from '@/hooks/use-permissions';
 import { queryKeys } from '@/lib/query-client';
 import { CategoryFormModal } from '@/pages/expense-categories/CategoryFormModal';
-import { SiteFormModal } from '@/pages/sites/SiteFormModal';
 import {
   TemporaryPasswordDialog,
   type RevealedPassword,
@@ -15,13 +14,12 @@ import { UserFormModal } from '@/pages/users/UserFormModal';
 /**
  * "Add new" from inside a picker: the record is created in its usual form, laid
  * over the form the user was filling, and the picker then selects it — no
- * leaving a half-filled expense to go and create a site first.
+ * leaving a half-filled expense to go and create a category first.
  */
 
-export type QuickAddKind = 'site' | 'category' | 'employee';
+export type QuickAddKind = 'category' | 'employee';
 
 const PERMISSION: Record<QuickAddKind, PermissionKey> = {
-  site: 'sites:create',
   category: 'expense_categories:create',
   employee: 'users:create',
 };
@@ -67,18 +65,6 @@ export const QuickAddDialogs = ({ adding, onClose, onAdded }: QuickAddDialogsPro
 
   return (
     <>
-      <SiteFormModal
-        open={adding === 'site'}
-        onOpenChange={onOpenChange}
-        site={null}
-        onSaved={(site) =>
-          added('site', queryKeys.sites.options, {
-            id: site.id,
-            name: site.name,
-            hint: site.location,
-          })
-        }
-      />
       <CategoryFormModal
         open={adding === 'category'}
         onOpenChange={onOpenChange}

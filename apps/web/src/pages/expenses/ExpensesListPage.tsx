@@ -16,7 +16,7 @@ import { SearchInput } from '@/components/common/SearchInput';
 import { StatTile } from '@/components/common/StatTile';
 import { Button } from '@/components/ui/button';
 import { useListQuery } from '@/hooks/use-list-query';
-import { useCategoryOptions, useEmployeeOptions, useSiteOptions } from '@/hooks/use-options';
+import { useCategoryOptions, useEmployeeOptions } from '@/hooks/use-options';
 import { usePermissions } from '@/hooks/use-permissions';
 import { ResourceLayout } from '@/layouts/PageLayout';
 import { queryKeys } from '@/lib/query-client';
@@ -66,7 +66,6 @@ const ExpensesListPage = () => {
   }, [searchParams, setSearchParams]);
 
   const employees = useEmployeeOptions(seeAll);
-  const sites = useSiteOptions();
   const categories = useCategoryOptions();
 
   const query = useQuery({
@@ -115,10 +114,10 @@ const ExpensesListPage = () => {
         id: 'description',
         header: 'Expense',
         cell: ({ row }) => {
-          const { description, category, site, paidTo } = row.original;
+          const { description, category, siteName, paidTo } = row.original;
           // The remark is optional, so an expense without one is titled by its
           // category — and then the line below does not repeat it.
-          const details = [site?.name, description ? category.name : null, paidTo].filter(Boolean);
+          const details = [siteName, description ? category.name : null, paidTo].filter(Boolean);
           return (
             <div className="min-w-0 max-w-[20rem]">
               <p className="truncate text-sm font-medium">{description || category.name}</p>
@@ -251,14 +250,6 @@ const ExpensesListPage = () => {
                 aria-label="Filter by employee"
               />
             ) : null}
-            <OptionSelect
-              options={sites.data}
-              value={list.filters.siteId ?? null}
-              onChange={(value) => list.setFilter('siteId', value)}
-              emptyLabel="All sites"
-              className="h-9 w-40"
-              aria-label="Filter by site"
-            />
             <OptionSelect
               options={categories.data}
               value={list.filters.categoryId ?? null}

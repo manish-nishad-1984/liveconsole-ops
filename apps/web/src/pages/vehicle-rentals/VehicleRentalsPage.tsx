@@ -28,7 +28,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useListQuery } from '@/hooks/use-list-query';
-import { useEmployeeOptions, useSiteOptions } from '@/hooks/use-options';
+import { useEmployeeOptions } from '@/hooks/use-options';
 import { usePermissions } from '@/hooks/use-permissions';
 import { ResourceLayout } from '@/layouts/PageLayout';
 import { queryKeys } from '@/lib/query-client';
@@ -87,7 +87,6 @@ const VehicleRentalsPage = () => {
   }, [searchParams, setSearchParams]);
 
   const employees = useEmployeeOptions(seeAll);
-  const sites = useSiteOptions();
 
   const query = useQuery({
     queryKey: queryKeys.transport.list(list.params),
@@ -122,7 +121,7 @@ const VehicleRentalsPage = () => {
             </p>
             <p className="truncate text-2xs text-muted-foreground">
               {row.original.vendorName}
-              {row.original.site ? ` · ${row.original.site.name}` : ''}
+              {row.original.siteName ? ` · ${row.original.siteName}` : ''}
             </p>
           </div>
         ),
@@ -333,14 +332,6 @@ const VehicleRentalsPage = () => {
                 aria-label="Filter by employee"
               />
             ) : null}
-            <OptionSelect
-              options={sites.data}
-              value={list.filters.siteId ?? null}
-              onChange={(value) => list.setFilter('siteId', value)}
-              emptyLabel="All sites"
-              className="h-9 w-40"
-              aria-label="Filter by site"
-            />
             <Select
               value={list.filters.rentalStatus ?? ALL}
               onValueChange={(value) =>

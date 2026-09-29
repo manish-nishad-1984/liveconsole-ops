@@ -13,7 +13,8 @@ import {
 export const expenseSchema = z.object({
   /** Honoured only for `expenses:manage`; everyone else files for themselves. */
   employeeId: optionalUuid,
-  siteId: optionalUuid,
+  /** Typed in, not picked — the Site master was dropped. */
+  siteName: optionalText(120),
   categoryId: uuid,
   expenseDate: dateOnly,
   amount,
@@ -26,7 +27,7 @@ export const expenseSchema = z.object({
 export const updateExpenseSchema = z
   .object({
     employeeId: uuid,
-    siteId: optionalUuid,
+    siteName: optionalText(120),
     categoryId: uuid,
     expenseDate: dateOnly,
     amount,
@@ -41,7 +42,6 @@ export const updateExpenseSchema = z
 
 export const expenseListQuerySchema = listQuery.extend({
   employeeId: uuid.optional(),
-  siteId: uuid.optional(),
   categoryId: uuid.optional(),
   paymentMode: z.nativeEnum(PaymentMode).optional(),
   from: dateOnly.optional(),
@@ -56,7 +56,7 @@ export const EXPENSE_SORT_FIELDS = [
   'amount',
   'createdAt',
   'employee.fullName',
-  'site.name',
+  'siteName',
 ] as const;
 
 export type ExpenseInput = z.infer<typeof expenseSchema>;

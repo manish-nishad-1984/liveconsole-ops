@@ -32,7 +32,7 @@ export interface CashEntryDto extends AuditFields {
   entryNo: string;
   type: CashEntryType;
   employee: PersonRef;
-  site: NamedRef | null;
+  siteName: string | null;
   entryDate: DateOnlyString;
   amount: MoneyString;
   paymentMode: PaymentMode;
@@ -59,7 +59,7 @@ export interface CashBookListDto extends Paginated<CashEntryDto> {
 export interface CashEntryRequest {
   type: CashEntryType;
   employeeId: UUID;
-  siteId?: UUID | null;
+  siteName?: string | null;
   entryDate: DateOnlyString;
   amount: MoneyString | number;
   paymentMode: PaymentMode;
@@ -84,7 +84,7 @@ export interface ExpenseDto extends AuditFields {
   id: UUID;
   expenseNo: string;
   employee: PersonRef;
-  site: NamedRef | null;
+  siteName: string | null;
   category: NamedRef;
   expenseDate: DateOnlyString;
   amount: MoneyString;
@@ -106,7 +106,7 @@ export interface ExpenseDto extends AuditFields {
 export interface ExpenseRequest {
   /** Only honoured for callers with `expenses:manage`; otherwise the caller. */
   employeeId?: UUID | null;
-  siteId?: UUID | null;
+  siteName?: string | null;
   categoryId: UUID;
   expenseDate: DateOnlyString;
   amount: MoneyString | number;

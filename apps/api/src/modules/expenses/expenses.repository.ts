@@ -13,9 +13,8 @@ export const expenseSelect = {
   expenseNo: true,
   employeeId: true,
   employee: { select: { id: true, fullName: true } },
-  site: { select: { id: true, name: true } },
   category: { select: { id: true, name: true } },
-  siteId: true,
+  siteName: true,
   categoryId: true,
   expenseDate: true,
   amount: true,
@@ -42,7 +41,6 @@ const buildWhere = (
   and(
     { organizationId, deletedAt: null },
     employeeScope ? { employeeId: employeeScope } : equals('employeeId', query.employeeId),
-    equals('siteId', query.siteId),
     equals('categoryId', query.categoryId),
     equals('paymentMode', query.paymentMode),
     query.from || query.to
@@ -58,7 +56,7 @@ const buildWhere = (
       'description',
       'paidTo',
       'employee.fullName',
-      'site.name',
+      'siteName',
     ]),
   ) as Prisma.ExpenseWhereInput;
 
@@ -123,12 +121,6 @@ export const updateExpense = (
   data: Prisma.ExpenseUncheckedUpdateInput,
   db: Db = prisma,
 ) => db.expense.update({ where: { id }, data, select: expenseSelect });
-
-export const findActiveSite = (organizationId: string, id: string) =>
-  prisma.site.findFirst({
-    where: { id, organizationId, deletedAt: null, isActive: true },
-    select: { id: true },
-  });
 
 export const findActiveCategory = (organizationId: string, id: string) =>
   prisma.expenseCategory.findFirst({

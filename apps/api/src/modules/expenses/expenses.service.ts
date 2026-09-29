@@ -104,7 +104,7 @@ const toDto = (
   id: expense.id,
   expenseNo: expense.expenseNo,
   employee: expense.employee,
-  site: expense.site,
+  siteName: expense.siteName,
   category: expense.category,
   expenseDate: formatDateOnly(expense.expenseDate),
   amount: money(expense.amount),
@@ -205,13 +205,10 @@ const assertNotFuture = (date: string) => {
 
 const assertReferences = async (
   organizationId: string,
-  refs: { employeeId?: string; siteId?: string | null; categoryId?: string },
+  refs: { employeeId?: string; categoryId?: string },
 ) => {
   if (refs.employeeId && !(await findActiveEmployee(organizationId, refs.employeeId))) {
     throw new BusinessRuleError('The selected employee is not an active user');
-  }
-  if (refs.siteId && !(await repository.findActiveSite(organizationId, refs.siteId))) {
-    throw new BusinessRuleError('The selected site is not active');
   }
   if (refs.categoryId && !(await repository.findActiveCategory(organizationId, refs.categoryId))) {
     throw new BusinessRuleError('The selected category is not active');
@@ -228,7 +225,6 @@ export const create = async (input: ExpenseInput): Promise<ExpenseDto> => {
   assertWithinBackdateWindow(input.expenseDate, await expenseBackdateDays(organizationId));
   await assertReferences(organizationId, {
     employeeId: employeeId === actorId ? undefined : employeeId,
-    siteId: input.siteId,
     categoryId: input.categoryId,
   });
 
@@ -242,7 +238,7 @@ export const create = async (input: ExpenseInput): Promise<ExpenseDto> => {
         organizationId,
         expenseNo,
         employeeId,
-        siteId: input.siteId ?? null,
+        siteName: input.siteName ?? null,
         categoryId: input.categoryId,
         expenseDate,
         amount: input.amount,
@@ -261,7 +257,7 @@ export const create = async (input: ExpenseInput): Promise<ExpenseDto> => {
       entityLabel: expenseNo,
       changes: diffRecords(null, {
         employee: createdExpense.employee.fullName,
-        site: createdExpense.site?.name ?? null,
+        site: createdExpense.siteName,
         amount: money(createdExpense.amount),
       }),
       db: tx,
@@ -299,13 +295,12 @@ export const update = async (id: string, input: UpdateExpenseInput): Promise<Exp
   }
   await assertReferences(organizationId, {
     employeeId: input.employeeId !== existing.employeeId ? input.employeeId : undefined,
-    siteId: input.siteId !== existing.siteId ? input.siteId : undefined,
     categoryId: input.categoryId !== existing.categoryId ? input.categoryId : undefined,
   });
 
   const expense = await repository.updateExpense(id, {
     ...(input.employeeId !== undefined ? { employeeId: input.employeeId } : {}),
-    ...(input.siteId !== undefined ? { siteId: input.siteId } : {}),
+    ...(input.siteName !== undefined ? { siteName: input.siteName } : {}),
     ...(input.categoryId !== undefined ? { categoryId: input.categoryId } : {}),
     ...(input.expenseDate !== undefined ? { expenseDate: parseDateOnly(input.expenseDate) } : {}),
     ...(input.amount !== undefined ? { amount: input.amount } : {}),
@@ -318,7 +313,7 @@ export const update = async (id: string, input: UpdateExpenseInput): Promise<Exp
   const snapshot = (record: ExpenseRecord) => ({
     ...toDto(record),
     employee: record.employee.fullName,
-    site: record.site?.name ?? null,
+    site: record.siteName,
     category: record.category.name,
   });
 
@@ -491,7 +486,7 @@ export const exportToCsv = async (query: ExpenseListQueryInput): Promise<string>
       expense.expenseNo,
       formatDateOnly(expense.expenseDate),
       expense.employee.fullName,
-      expense.site?.name,
+      expense.siteName,
       expense.category.name,
       expense.description,
       expense.paidTo,

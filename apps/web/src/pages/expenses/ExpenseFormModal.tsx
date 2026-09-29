@@ -20,7 +20,6 @@ import {
   useCategoryOptions,
   useEmployeeOptions,
   useOrgSettings,
-  useSiteOptions,
 } from '@/hooks/use-options';
 import { useCan, useIsAdmin } from '@/hooks/use-permissions';
 import { formatFileSize, prepareUpload } from '@/lib/image';
@@ -46,8 +45,8 @@ const MAX_RECEIPTS = 5;
 const schema = z.object({
   employeeId: z.string(),
   expenseDate: z.string().min(1, 'Choose the date'),
-  /** Optional — empty means the expense is not for one site. */
-  siteId: z.string(),
+  /** Typed in, not picked. Empty means the expense is not for one site. */
+  siteName: z.string().trim().max(120, 'Site name is too long'),
   categoryId: z.string().min(1, 'Choose a category'),
   amount: z
     .string()
@@ -79,7 +78,6 @@ export const ExpenseFormModal = ({ open, onOpenChange, expense }: ExpenseFormMod
   const fileInput = useRef<HTMLInputElement>(null);
 
   const quickAdd = useQuickAdd();
-  const sites = useSiteOptions(open);
   const categories = useCategoryOptions(open);
   const employees = useEmployeeOptions(open && canManage);
   const settings = useOrgSettings(open && !isAdmin);
@@ -109,7 +107,7 @@ export const ExpenseFormModal = ({ open, onOpenChange, expense }: ExpenseFormMod
     defaultValues: {
       employeeId: '',
       expenseDate: todayIso(),
-      siteId: '',
+      siteName: '',
       categoryId: '',
       amount: '',
       paymentMode: 'CASH',
@@ -122,7 +120,7 @@ export const ExpenseFormModal = ({ open, onOpenChange, expense }: ExpenseFormMod
     reset({
       employeeId: expense?.employee.id ?? me?.id ?? '',
       expenseDate: expense?.expenseDate ?? todayIso(),
-      siteId: expense?.site?.id ?? '',
+      siteName: expense?.siteName ?? '',
       categoryId: expense?.category.id ?? '',
       amount: expense?.amount ?? '',
       paymentMode: expense?.paymentMode ?? 'CASH',
@@ -172,7 +170,7 @@ export const ExpenseFormModal = ({ open, onOpenChange, expense }: ExpenseFormMod
       const payload = {
         ...(canManage && values.employeeId ? { employeeId: values.employeeId } : {}),
         expenseDate: values.expenseDate,
-        siteId: values.siteId || null,
+        siteName: values.siteName || null,
         categoryId: values.categoryId,
         amount: values.amount,
         paymentMode: values.paymentMode,
@@ -213,7 +211,7 @@ export const ExpenseFormModal = ({ open, onOpenChange, expense }: ExpenseFormMod
     onError: (error) =>
       setFormError(
         applyFieldErrors(error, setError, {
-          knownFields: ['expenseDate', 'siteId', 'categoryId', 'amount', 'description'],
+          knownFields: ['expenseDate', 'siteName', 'categoryId', 'amount', 'description'],
           fallback: 'Could not save this expense.',
         }),
       ),
@@ -285,17 +283,13 @@ export const ExpenseFormModal = ({ open, onOpenChange, expense }: ExpenseFormMod
             )}
           </FormField>
 
-          <FormField label="Site" error={errors.siteId?.message} hint="Optional.">
+          <FormField label="Site" error={errors.siteName?.message} hint="Optional.">
             {(props) => (
-              <OptionSelect
-                id={props.id}
-                invalid={props.invalid}
-                options={sites.data}
-                value={watch('siteId') || null}
-                onChange={(value) => setValue('siteId', value ?? '', { shouldValidate: true })}
-                emptyLabel="No site"
-                onAddNew={quickAdd.addNew('site')}
-                addNewLabel="Add new site"
+              <Input
+                {...props}
+                {...register('siteName')}
+                placeholder="e.g. Adajan site"
+                autoComplete="off"
               />
             )}
           </FormField>
@@ -436,7 +430,6 @@ export const ExpenseFormModal = ({ open, onOpenChange, expense }: ExpenseFormMod
         adding={quickAdd.adding}
         onClose={quickAdd.close}
         onAdded={(kind, id) => {
-          if (kind === 'site') setValue('siteId', id, { shouldValidate: true });
           if (kind === 'category') setValue('categoryId', id, { shouldValidate: true });
           if (kind === 'employee') setValue('employeeId', id);
         }}

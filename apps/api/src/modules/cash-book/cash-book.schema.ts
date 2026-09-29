@@ -6,14 +6,13 @@ import {
   dateOnly,
   listQuery,
   optionalText,
-  optionalUuid,
   uuid,
 } from '../../lib/validators.js';
 
 export const cashEntrySchema = z.object({
   type: z.nativeEnum(CashEntryType).default('GIVEN'),
   employeeId: uuid,
-  siteId: optionalUuid,
+  siteName: optionalText(120),
   entryDate: dateOnly,
   amount,
   paymentMode: z.nativeEnum(PaymentMode).default('CASH'),
@@ -25,7 +24,7 @@ export const updateCashEntrySchema = z
   .object({
     type: z.nativeEnum(CashEntryType),
     employeeId: uuid,
-    siteId: optionalUuid,
+    siteName: optionalText(120),
     entryDate: dateOnly,
     amount,
     paymentMode: z.nativeEnum(PaymentMode),
@@ -40,7 +39,6 @@ export const updateCashEntrySchema = z
 export const cashEntryListQuerySchema = listQuery.extend({
   type: z.nativeEnum(CashEntryType).optional(),
   employeeId: uuid.optional(),
-  siteId: uuid.optional(),
   paymentMode: z.nativeEnum(PaymentMode).optional(),
   from: dateOnly.optional(),
   to: dateOnly.optional(),

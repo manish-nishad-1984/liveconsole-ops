@@ -36,7 +36,7 @@ const toDto = (entry: CashEntryRecord): CashEntryDto => ({
   entryNo: entry.entryNo,
   type: entry.type,
   employee: entry.employee,
-  site: entry.site,
+  siteName: entry.siteName,
   entryDate: formatDateOnly(entry.entryDate),
   amount: money(entry.amount),
   paymentMode: entry.paymentMode,
@@ -105,13 +105,9 @@ const assertCanReturn = async (
 const assertReferences = async (
   organizationId: string,
   employeeId: string | undefined,
-  siteId: string | null | undefined,
 ) => {
   if (employeeId && !(await findActiveEmployee(organizationId, employeeId))) {
     throw new BusinessRuleError('The selected employee is not an active user');
-  }
-  if (siteId && !(await repository.findActiveSite(organizationId, siteId))) {
-    throw new BusinessRuleError('The selected site is not active');
   }
 };
 
@@ -120,7 +116,7 @@ export const create = async (input: CashEntryInput): Promise<CashEntryDto> => {
   const actorId = getActorId()!;
 
   assertNotFuture(input.entryDate);
-  await assertReferences(organizationId, input.employeeId, input.siteId);
+  await assertReferences(organizationId, input.employeeId);
   if (input.type === 'RETURNED') {
     await assertCanReturn(organizationId, input.employeeId, input.amount);
   }
@@ -136,7 +132,7 @@ export const create = async (input: CashEntryInput): Promise<CashEntryDto> => {
         entryNo,
         type: input.type,
         employeeId: input.employeeId,
-        siteId: input.siteId ?? null,
+        siteName: input.siteName ?? null,
         entryDate,
         amount: input.amount,
         paymentMode: input.paymentMode,
@@ -177,7 +173,6 @@ export const update = async (id: string, input: UpdateCashEntryInput): Promise<C
   await assertReferences(
     organizationId,
     input.employeeId !== existing.employeeId ? input.employeeId : undefined,
-    input.siteId !== existing.siteId ? input.siteId : undefined,
   );
 
   const type = input.type ?? existing.type;
@@ -188,7 +183,7 @@ export const update = async (id: string, input: UpdateCashEntryInput): Promise<C
   const entry = await repository.updateCashEntry(id, {
     ...(input.type !== undefined ? { type: input.type } : {}),
     ...(input.employeeId !== undefined ? { employeeId: input.employeeId } : {}),
-    ...(input.siteId !== undefined ? { siteId: input.siteId } : {}),
+    ...(input.siteName !== undefined ? { siteName: input.siteName } : {}),
     ...(input.entryDate !== undefined ? { entryDate: parseDateOnly(input.entryDate) } : {}),
     ...(input.amount !== undefined ? { amount: input.amount } : {}),
     ...(input.paymentMode !== undefined ? { paymentMode: input.paymentMode } : {}),
@@ -206,12 +201,12 @@ export const update = async (id: string, input: UpdateCashEntryInput): Promise<C
       {
         ...toDto(existing),
         employee: existing.employee.fullName,
-        site: existing.site?.name ?? null,
+        site: existing.siteName,
       },
       {
         ...toDto(entry),
         employee: entry.employee.fullName,
-        site: entry.site?.name ?? null,
+        site: entry.siteName,
       },
     ),
   });
@@ -268,7 +263,7 @@ export const exportToCsv = async (query: CashEntryListQueryInput): Promise<strin
       formatDateOnly(entry.entryDate),
       entry.type,
       entry.employee.fullName,
-      entry.site?.name,
+      entry.siteName,
       money(entry.amount),
       entry.paymentMode,
       entry.referenceNo,

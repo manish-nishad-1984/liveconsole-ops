@@ -80,7 +80,7 @@ export const getSummary = async (): Promise<DashboardSummaryDto> => {
       take: 8,
     }),
     prisma.expense.groupBy({
-      by: ['siteId'],
+      by: ['siteName'],
       where: monthSpend,
       _sum: { amount: true },
     }),
@@ -93,16 +93,10 @@ export const getSummary = async (): Promise<DashboardSummaryDto> => {
     actorCan('transport:view') ? vehicleRentalsService.dashboardSummary() : Promise.resolve(null),
   ]);
 
-  const [siteNames, categoryNames] = await Promise.all([
-    prisma.site.findMany({
-      where: { id: { in: bySite.flatMap((row) => (row.siteId ? [row.siteId] : [])) } },
-      select: { id: true, name: true },
-    }),
-    prisma.expenseCategory.findMany({
-      where: { id: { in: byCategory.map((row) => row.categoryId) } },
-      select: { id: true, name: true },
-    }),
-  ]);
+  const categoryNames = await prisma.expenseCategory.findMany({
+    where: { id: { in: byCategory.map((row) => row.categoryId) } },
+    select: { id: true, name: true },
+  });
 
   let cashGiven = ZERO;
   let cashReturned = ZERO;
@@ -132,8 +126,12 @@ export const getSummary = async (): Promise<DashboardSummaryDto> => {
     recentExpenses: await expensesToDtos(organizationId, recent),
     bySite: topByAmount(
       // Expenses without a site still count, under their own bar.
-      bySite.map((row) => ({ key: row.siteId ?? NO_SITE, amount: row._sum.amount })),
-      new Map([[NO_SITE, 'No site'], ...siteNames.map((site) => [site.id, site.name] as const)]),
+      bySite.map((row) => ({ key: row.siteName || NO_SITE, amount: row._sum.amount })),
+      // The site is typed in now, so the name is its own key.
+      new Map([
+        [NO_SITE, 'No site'],
+        ...bySite.flatMap((row) => (row.siteName ? [[row.siteName, row.siteName] as const] : [])),
+      ]),
     ),
     byCategory: topByAmount(
       byCategory.map((row) => ({

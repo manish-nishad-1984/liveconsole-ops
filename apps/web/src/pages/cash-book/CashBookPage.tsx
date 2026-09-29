@@ -161,7 +161,7 @@ const CashBookPage = () => {
         meta: meta({ priority: 'low' }),
         cell: ({ row }) => (
           <div className="min-w-0 max-w-[16rem]">
-            <p className="truncate text-xs">{row.original.site?.name ?? '—'}</p>
+            <p className="truncate text-xs">{row.original.siteName ?? '—'}</p>
             {row.original.notes ? (
               <p className="truncate text-2xs text-muted-foreground">{row.original.notes}</p>
             ) : null}

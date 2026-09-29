@@ -19,7 +19,7 @@ import { OptionSelect } from '@/components/common/OptionSelect';
 import { Segmented } from '@/components/common/Segmented';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { useEmployeeOptions, useSiteOptions } from '@/hooks/use-options';
+import { useEmployeeOptions } from '@/hooks/use-options';
 import { useCan } from '@/hooks/use-permissions';
 import { PAYMENT_MODE_LABELS } from '@/lib/labels';
 import { queryKeys } from '@/lib/query-client';
@@ -36,7 +36,7 @@ const TYPE_LABELS: Record<CashEntryType, string> = {
 const schema = z.object({
   type: z.enum(CASH_ENTRY_TYPES),
   employeeId: z.string().min(1, 'Choose the employee'),
-  siteId: z.string().nullable(),
+  siteName: z.string().trim().max(120, 'Site name is too long'),
   entryDate: z.string().min(1, 'Choose the date'),
   amount: z
     .string()
@@ -67,7 +67,6 @@ export const CashEntryFormModal = ({
   const [formError, setFormError] = useState<string | null>(null);
   const quickAdd = useQuickAdd();
   const employees = useEmployeeOptions(open);
-  const sites = useSiteOptions(open);
   const canSeeBalances = useCan('balances:manage');
 
   const {
@@ -83,7 +82,7 @@ export const CashEntryFormModal = ({
     defaultValues: {
       type: 'GIVEN',
       employeeId: '',
-      siteId: null,
+      siteName: '',
       entryDate: todayIso(),
       amount: '',
       paymentMode: 'CASH',
@@ -97,7 +96,7 @@ export const CashEntryFormModal = ({
     reset({
       type: entry?.type ?? 'GIVEN',
       employeeId: entry?.employee.id ?? defaultEmployeeId ?? '',
-      siteId: entry?.site?.id ?? null,
+      siteName: entry?.siteName ?? '',
       entryDate: entry?.entryDate ?? todayIso(),
       amount: entry?.amount ?? '',
       paymentMode: entry?.paymentMode ?? 'CASH',
@@ -124,7 +123,7 @@ export const CashEntryFormModal = ({
     mutationFn: (values: CashForm) => {
       const payload = {
         ...values,
-        siteId: values.siteId,
+        siteName: values.siteName || null,
         referenceNo: values.referenceNo || null,
         notes: values.notes || null,
       };
@@ -240,15 +239,7 @@ export const CashEntryFormModal = ({
 
           <FormField label="Site" hint="Optional — if the cash is for one site." full>
             {(props) => (
-              <OptionSelect
-                id={props.id}
-                options={sites.data}
-                value={watch('siteId')}
-                onChange={(value) => setValue('siteId', value)}
-                emptyLabel="Not for a specific site"
-                onAddNew={quickAdd.addNew('site')}
-                addNewLabel="Add new site"
-              />
+              <Input {...props} {...register('siteName')} placeholder="e.g. Adajan site" autoComplete="off" />
             )}
           </FormField>
 
@@ -263,7 +254,6 @@ export const CashEntryFormModal = ({
         onClose={quickAdd.close}
         onAdded={(kind, id) => {
           if (kind === 'employee') setValue('employeeId', id, { shouldValidate: true });
-          if (kind === 'site') setValue('siteId', id);
         }}
       />
     </>

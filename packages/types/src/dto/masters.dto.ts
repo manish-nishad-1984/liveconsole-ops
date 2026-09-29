@@ -1,22 +1,5 @@
 import type { AuditFields, UUID } from '../common.js';
 
-export interface SiteDto extends AuditFields {
-  id: UUID;
-  name: string;
-  location: string | null;
-  clientName: string | null;
-  notes: string | null;
-  isActive: boolean;
-}
-
-export interface SiteRequest {
-  name: string;
-  location?: string | null;
-  clientName?: string | null;
-  notes?: string | null;
-  isActive?: boolean;
-}
-
 export interface ExpenseCategoryDto extends AuditFields {
   id: UUID;
   name: string;
@@ -32,7 +15,7 @@ export interface ExpenseCategoryRequest {
   isActive?: boolean;
 }
 
-/** Picker entry for sites, categories and employees. */
+/** Picker entry for categories and employees. */
 export interface OptionDto {
   id: UUID;
   name: string;

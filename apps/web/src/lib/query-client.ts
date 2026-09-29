@@ -90,11 +90,6 @@ export const queryKeys = {
     list: (params: object) => ['audit-logs', 'list', params] as const,
     entityTypes: ['audit-logs', 'entity-types'] as const,
   },
-  sites: {
-    all: ['sites'] as const,
-    list: (params: object) => ['sites', 'list', params] as const,
-    options: ['sites', 'options'] as const,
-  },
   expenseCategories: {
     all: ['expense-categories'] as const,
     list: (params: object) => ['expense-categories', 'list', params] as const,

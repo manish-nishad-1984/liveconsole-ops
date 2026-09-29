@@ -168,7 +168,7 @@ const toDto = (rental: RentalRecord, withPayments = false): VehicleRentalDto => 
     id: rental.id,
     rentalNo: rental.rentalNo,
     employee: rental.employee,
-    site: rental.site,
+    siteName: rental.siteName,
     vehicleType: rental.vehicleType,
     vehicleNumber: rental.vehicleNumber,
     vendorName: rental.vendorName,
@@ -290,20 +290,17 @@ export const suggestions = async (): Promise<VehicleRentalSuggestionsDto> => {
 
 const assertReferences = async (
   organizationId: string,
-  refs: { employeeId?: string | null; siteId?: string | null },
+  refs: { employeeId?: string | null },
 ) => {
   if (refs.employeeId && !(await findActiveEmployee(organizationId, refs.employeeId))) {
     throw new BusinessRuleError('The selected employee is not an active user');
-  }
-  if (refs.siteId && !(await repository.findActiveSite(organizationId, refs.siteId))) {
-    throw new BusinessRuleError('The selected site is not active');
   }
 };
 
 /** Audit snapshot — names rather than ids, so the trail reads on its own. */
 const snapshot = (rental: RentalRecord) => ({
   employee: rental.employee.fullName,
-  site: rental.site?.name ?? null,
+  site: rental.siteName,
   vehicleType: rental.vehicleType,
   vehicleNumber: rental.vehicleNumber,
   vendorName: rental.vendorName,
@@ -325,7 +322,6 @@ export const create = async (input: RentalInput): Promise<VehicleRentalDto> => {
 
   await assertReferences(organizationId, {
     employeeId: employeeId === actorId ? undefined : employeeId,
-    siteId: input.siteId,
   });
 
   const fromDate = parseDateOnly(input.fromDate);
@@ -338,7 +334,7 @@ export const create = async (input: RentalInput): Promise<VehicleRentalDto> => {
         organizationId,
         rentalNo,
         employeeId,
-        siteId: input.siteId ?? null,
+        siteName: input.siteName ?? null,
         vehicleType: input.vehicleType,
         vehicleNumber: input.vehicleNumber?.toUpperCase() ?? null,
         vendorName: input.vendorName,
@@ -400,12 +396,11 @@ export const update = async (id: string, input: UpdateRentalInput): Promise<Vehi
 
   await assertReferences(organizationId, {
     employeeId: input.employeeId !== existing.employeeId ? input.employeeId : undefined,
-    siteId: input.siteId !== existing.siteId ? input.siteId : undefined,
   });
 
   const rental = await repository.updateRental(id, {
     ...(input.employeeId ? { employeeId: input.employeeId } : {}),
-    ...(input.siteId !== undefined ? { siteId: input.siteId } : {}),
+    ...(input.siteName !== undefined ? { siteName: input.siteName } : {}),
     ...(input.vehicleType !== undefined ? { vehicleType: input.vehicleType } : {}),
     ...(input.vehicleNumber !== undefined
       ? { vehicleNumber: input.vehicleNumber?.toUpperCase() ?? null }
@@ -498,7 +493,7 @@ interface PaymentTerms {
 
 const expenseFields = (rental: RentalRecord, terms: PaymentTerms) => ({
   employeeId: terms.paidById,
-  siteId: rental.siteId,
+  siteName: rental.siteName,
   expenseDate: parseDateOnly(terms.paymentDate),
   amount: terms.amount,
   paymentMode: terms.paymentMode,
@@ -817,7 +812,7 @@ export const exportToCsv = async (query: RentalListQueryInput): Promise<string> 
     rentals.map((rental) => [
       rental.rentalNo,
       rental.employee.fullName,
-      rental.site?.name,
+      rental.siteName,
       rental.vehicleType,
       rental.vehicleNumber,
       rental.vendorName,

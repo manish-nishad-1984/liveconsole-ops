@@ -12,8 +12,7 @@ export const cashEntrySelect = {
   type: true,
   employeeId: true,
   employee: { select: { id: true, fullName: true } },
-  siteId: true,
-  site: { select: { id: true, name: true } },
+  siteName: true,
   entryDate: true,
   amount: true,
   paymentMode: true,
@@ -40,7 +39,6 @@ const buildWhere = (
     { organizationId, deletedAt: null },
     employeeScope ? { employeeId: employeeScope } : equals('employeeId', query.employeeId),
     equals('type', query.type),
-    equals('siteId', query.siteId),
     equals('paymentMode', query.paymentMode),
     query.from || query.to
       ? {
@@ -81,7 +79,7 @@ export const listCashEntries = async (
 };
 
 /**
- * Expenses over the same employee, site and dates as the cash book filters. Type,
+ * Expenses over the same employee and dates as the cash book filters. Type,
  * mode and search describe cash entries, not bills, so they do not narrow this.
  * `employeeScope` here is the expense scope — whose bills the caller may see.
  */
@@ -94,8 +92,7 @@ export const sumExpenses = (
     where: and(
       { organizationId, deletedAt: null },
       employeeScope ? { employeeId: employeeScope } : equals('employeeId', query.employeeId),
-      equals('siteId', query.siteId),
-      query.from || query.to
+        query.from || query.to
         ? {
             expenseDate: {
               ...(query.from ? { gte: parseDateOnly(query.from) } : {}),
@@ -143,8 +140,3 @@ export const updateCashEntry = (
   db: Db = prisma,
 ) => db.cashEntry.update({ where: { id }, data, select: cashEntrySelect });
 
-export const findActiveSite = (organizationId: string, id: string) =>
-  prisma.site.findFirst({
-    where: { id, organizationId, deletedAt: null, isActive: true },
-    select: { id: true },
-  });

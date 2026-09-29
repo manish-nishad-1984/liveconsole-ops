@@ -5,7 +5,6 @@ import {
   employeesService,
   expenseCategoriesService,
   settingsService,
-  sitesService,
 } from '@/services/masters.service';
 
 /**
@@ -14,14 +13,6 @@ import {
  */
 
 const OPTIONS_STALE_MS = 5 * 60_000;
-
-export const useSiteOptions = (enabled = true) =>
-  useQuery({
-    queryKey: queryKeys.sites.options,
-    queryFn: () => sitesService.options(),
-    staleTime: OPTIONS_STALE_MS,
-    enabled,
-  });
 
 export const useCategoryOptions = (enabled = true) =>
   useQuery({

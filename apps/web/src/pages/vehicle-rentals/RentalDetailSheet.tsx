@@ -144,7 +144,7 @@ export const RentalDetailSheet = ({
               <div className="flex-1 space-y-5 px-5 py-4">
                 <dl className="divide-y divide-border">
                   <Row label="In charge">{rental.employee.fullName}</Row>
-                  <Row label="Site">{rental.site?.name ?? '—'}</Row>
+                  <Row label="Site">{rental.siteName ?? '—'}</Row>
                   <Row label="Hired from">
                     {rental.vendorName}
                     <span className="block text-2xs font-normal">

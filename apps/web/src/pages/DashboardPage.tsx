@@ -92,7 +92,7 @@ const RecentList = ({
             <p className="truncate text-2xs text-muted-foreground">
               {formatDateOnly(expense.expenseDate)} ·{' '}
               {showEmployee ? `${expense.employee.fullName} · ` : ''}
-              {expense.site?.name ?? expense.category.name}
+              {expense.siteName ?? expense.category.name}
             </p>
           </div>
           <p className="numeric shrink-0 text-sm font-semibold">{formatCurrency(expense.amount)}</p>

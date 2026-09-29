@@ -45,7 +45,6 @@ export const MODULE_PERMISSIONS = {
   transport: [...CRUD, 'export', 'manage'],
 
   // Masters
-  sites: [...CRUD],
   expense_categories: [...CRUD],
 } as const satisfies Record<string, readonly ActionKey[]>;
 

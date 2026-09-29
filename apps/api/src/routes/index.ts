@@ -10,7 +10,6 @@ import { expenseCategoriesRoutes } from '../modules/expense-categories/expense-c
 import { expensesRoutes } from '../modules/expenses/expenses.routes.js';
 import { rolesRoutes } from '../modules/roles/roles.routes.js';
 import { settingsRoutes } from '../modules/settings/settings.routes.js';
-import { sitesRoutes } from '../modules/sites/sites.routes.js';
 import { usersRoutes } from '../modules/users/users.routes.js';
 import { vehicleRentalsRoutes } from '../modules/vehicle-rentals/vehicle-rentals.routes.js';
 import { healthRoutes } from './health.routes.js';
@@ -42,7 +41,6 @@ const protectedRoutes: RouteRegistration[] = [
   { path: '/cash-book', router: cashBookRoutes },
   { path: '/balances', router: balancesRoutes },
   { path: '/vehicle-rentals', router: vehicleRentalsRoutes },
-  { path: '/sites', router: sitesRoutes },
   { path: '/expense-categories', router: expenseCategoriesRoutes },
   { path: '/settings', router: settingsRoutes },
 ];

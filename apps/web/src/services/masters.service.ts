@@ -4,20 +4,9 @@ import type {
   OptionDto,
   OrgSettingsDto,
   OrgSettingsRequest,
-  SiteDto,
-  SiteRequest,
 } from '@liveconsole-ops/types';
 
 import { api, type QueryParams } from '@/lib/api-client';
-
-export const sitesService = {
-  list: (params: QueryParams) => api.list<SiteDto>('/sites', params),
-  options: () => api.get<OptionDto[]>('/sites/options'),
-  create: (payload: SiteRequest) => api.post<SiteDto>('/sites', payload),
-  update: (id: string, payload: Partial<SiteRequest>) =>
-    api.patch<SiteDto>(`/sites/${id}`, payload),
-  remove: (id: string) => api.delete<SiteDto>(`/sites/${id}`),
-};
 
 export const expenseCategoriesService = {
   list: (params: QueryParams) => api.list<ExpenseCategoryDto>('/expense-categories', params),

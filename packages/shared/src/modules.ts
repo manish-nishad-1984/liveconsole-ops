@@ -103,17 +103,6 @@ export const MODULES: ModuleDefinition[] = [
     description: 'Vehicles hired for sites — rent, payments and what is still due.',
   },
   {
-    key: 'sites',
-    label: 'Sites',
-    singular: 'Site',
-    path: '/sites',
-    icon: 'MapPin',
-    group: 'masters',
-    order: 50,
-    permission: 'sites:view',
-    description: 'Work sites that expenses and vehicles are booked against.',
-  },
-  {
     key: 'expense_categories',
     label: 'Expense Categories',
     singular: 'Expense Category',

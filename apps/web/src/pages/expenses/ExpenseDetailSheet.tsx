@@ -76,7 +76,7 @@ export const ExpenseDetailSheet = ({
               <dl className="divide-y divide-border">
                 <Row label="Employee">{expense.employee.fullName}</Row>
                 <Row label="Date">{formatDateOnly(expense.expenseDate)}</Row>
-                <Row label="Site">{expense.site?.name ?? '—'}</Row>
+                <Row label="Site">{expense.siteName ?? '—'}</Row>
                 <Row label="Category">{expense.category.name}</Row>
                 {expense.rentPayment ? (
                   <Row label="Vehicle rent">

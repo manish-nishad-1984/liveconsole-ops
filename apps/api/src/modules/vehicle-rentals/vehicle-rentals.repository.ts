@@ -35,8 +35,7 @@ export const rentalSelect = {
   rentalNo: true,
   employeeId: true,
   employee: { select: { id: true, fullName: true } },
-  siteId: true,
-  site: { select: { id: true, name: true } },
+  siteName: true,
   vehicleType: true,
   vehicleNumber: true,
   vendorName: true,
@@ -76,7 +75,6 @@ const buildWhere = (
   and(
     { organizationId, deletedAt: null },
     employeeScope ? { employeeId: employeeScope } : equals('employeeId', query.employeeId),
-    equals('siteId', query.siteId),
     // Overlap: started on or before `to`, and not ended before `from`.
     query.to ? { fromDate: { lte: parseDateOnly(query.to) } } : undefined,
     query.from
@@ -89,7 +87,7 @@ const buildWhere = (
       'vendorName',
       'driverName',
       'employee.fullName',
-      'site.name',
+      'siteName',
     ]),
   ) as Prisma.VehicleRentalWhereInput;
 
@@ -145,11 +143,6 @@ export const updatePayment = (
   db: Db = prisma,
 ) => db.vehicleRentPayment.update({ where: { id }, data, select: paymentSelect });
 
-export const findActiveSite = (organizationId: string, id: string) =>
-  prisma.site.findFirst({
-    where: { id, organizationId, deletedAt: null, isActive: true },
-    select: { id: true },
-  });
 
 export const RENT_CATEGORY_NAME = 'Vehicle Rent';
 

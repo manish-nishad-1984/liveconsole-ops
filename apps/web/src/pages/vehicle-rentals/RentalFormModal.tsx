@@ -15,7 +15,7 @@ import { Segmented } from '@/components/common/Segmented';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { useEmployeeOptions, useSiteOptions } from '@/hooks/use-options';
+import { useEmployeeOptions } from '@/hooks/use-options';
 import { useCan } from '@/hooks/use-permissions';
 import { RENT_BASIS_LABELS } from '@/lib/labels';
 import { queryKeys } from '@/lib/query-client';
@@ -35,7 +35,7 @@ const optionalMobile = z
 const schema = z
   .object({
     employeeId: z.string(),
-    siteId: z.string(),
+    siteName: z.string().trim().max(120, 'Site name is too long'),
     vehicleType: z.string().trim().min(1, 'Say what vehicle it is').max(60),
     vehicleNumber: z.string().trim().max(20),
     vendorName: z.string().trim().min(1, 'Who is it hired from?').max(120),
@@ -89,7 +89,6 @@ export const RentalFormModal = ({ open, onOpenChange, rental, onSaved }: RentalF
   const quickAdd = useQuickAdd();
   const [formError, setFormError] = useState<string | null>(null);
 
-  const sites = useSiteOptions(open);
   const employees = useEmployeeOptions(open && canManage);
   const suggestions = useQuery({
     queryKey: queryKeys.transport.suggestions,
@@ -111,7 +110,7 @@ export const RentalFormModal = ({ open, onOpenChange, rental, onSaved }: RentalF
     resolver: zodResolver(schema),
     defaultValues: {
       employeeId: '',
-      siteId: '',
+      siteName: '',
       vehicleType: '',
       vehicleNumber: '',
       vendorName: '',
@@ -132,7 +131,7 @@ export const RentalFormModal = ({ open, onOpenChange, rental, onSaved }: RentalF
     if (!open) return;
     reset({
       employeeId: rental?.employee.id ?? me?.id ?? '',
-      siteId: rental?.site?.id ?? '',
+      siteName: rental?.siteName ?? '',
       vehicleType: rental?.vehicleType ?? '',
       vehicleNumber: rental?.vehicleNumber ?? '',
       vendorName: rental?.vendorName ?? '',
@@ -154,7 +153,7 @@ export const RentalFormModal = ({ open, onOpenChange, rental, onSaved }: RentalF
     mutationFn: (values: RentalForm) => {
       const payload = {
         ...(canManage && values.employeeId ? { employeeId: values.employeeId } : {}),
-        siteId: values.siteId || null,
+        siteName: values.siteName || null,
         vehicleType: values.vehicleType,
         vehicleNumber: values.vehicleNumber || null,
         vendorName: values.vendorName,
@@ -182,7 +181,7 @@ export const RentalFormModal = ({ open, onOpenChange, rental, onSaved }: RentalF
       setFormError(
         applyFieldErrors(error, setError, {
           knownFields: [
-            'siteId',
+            'siteName',
             'vehicleType',
             'vehicleNumber',
             'vendorName',
@@ -248,17 +247,9 @@ export const RentalFormModal = ({ open, onOpenChange, rental, onSaved }: RentalF
             </FormField>
           ) : null}
 
-          <FormField label="Site" error={errors.siteId?.message} hint="Optional." full={!canManage}>
+          <FormField label="Site" error={errors.siteName?.message} hint="Optional." full={!canManage}>
             {(props) => (
-              <OptionSelect
-                id={props.id}
-                options={sites.data}
-                value={watch('siteId') || null}
-                onChange={(value) => setValue('siteId', value ?? '')}
-                emptyLabel="No site"
-                onAddNew={quickAdd.addNew('site')}
-                addNewLabel="Add new site"
-              />
+              <Input {...props} {...register('siteName')} placeholder="e.g. Adajan site" autoComplete="off" />
             )}
           </FormField>
 
@@ -426,7 +417,6 @@ export const RentalFormModal = ({ open, onOpenChange, rental, onSaved }: RentalF
         adding={quickAdd.adding}
         onClose={quickAdd.close}
         onAdded={(kind, id) => {
-          if (kind === 'site') setValue('siteId', id);
           if (kind === 'employee') setValue('employeeId', id);
         }}
       />

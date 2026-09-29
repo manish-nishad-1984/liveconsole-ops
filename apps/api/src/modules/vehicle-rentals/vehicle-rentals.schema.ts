@@ -38,7 +38,7 @@ const optionalMoney = z
 const rentalFields = {
   /** Honoured only for `transport:manage`; everyone else is in charge of their own. */
   employeeId: optionalUuid,
-  siteId: optionalUuid,
+  siteName: optionalText(120),
   vehicleType: shortText(60),
   vehicleNumber: optionalText(20),
   vendorName: shortText(120),
@@ -94,7 +94,6 @@ export const paymentParams = z.object({ id: uuid, paymentId: uuid });
 
 export const rentalListQuerySchema = listQuery.extend({
   employeeId: uuid.optional(),
-  siteId: uuid.optional(),
   paymentStatus: z.enum(RENT_PAYMENT_STATUSES).optional(),
   rentalStatus: z.enum(RENTAL_STATUSES).optional(),
   /** Rentals whose period overlaps this range. */
