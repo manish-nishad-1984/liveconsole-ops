@@ -8,7 +8,7 @@ import {
   ArrowUpRight,
   Download,
   FileText,
-  Paperclip,
+  ReceiptText,
   Wallet,
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
@@ -95,14 +95,14 @@ const StatementPage = () => {
                       documentNo: row.original.documentNo,
                     })
                   }
-                  className="inline-flex shrink-0 items-center gap-0.5 rounded border border-primary/25
-                    bg-accent px-1.5 py-0.5 text-2xs font-semibold text-accent-foreground
-                    hover:bg-primary hover:text-primary-foreground"
+                  className="inline-flex shrink-0 items-center gap-1 rounded border border-status-success/30
+                    bg-status-success/10 px-1.5 py-0.5 text-2xs font-semibold text-status-success
+                    hover:bg-status-success hover:text-white"
                   title={`Open ${row.original.attachmentCount} receipt${
                     row.original.attachmentCount === 1 ? '' : 's'
                   }`}
                 >
-                  <Paperclip className="size-3" />
+                  <ReceiptText className="size-3.5" />
                   {row.original.attachmentCount}
                 </button>
               ) : null}

@@ -14,7 +14,7 @@ import { expensesService } from '@/services/petty-cash.service';
  * token and shown through an object URL, which is released when it unmounts.
  */
 
-const useReceiptUrl = (expenseId: string, attachment: AttachmentDto) => {
+export const useReceiptUrl = (expenseId: string, attachment: AttachmentDto) => {
   const query = useQuery({
     queryKey: ['receipt', expenseId, attachment.id],
     queryFn: async () => (await expensesService.receiptBlob(expenseId, attachment.id)).blob,
