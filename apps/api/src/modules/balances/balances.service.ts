@@ -11,6 +11,7 @@ import {
   lastActivityDates,
   totalsFor,
 } from '../../services/ledger.service.js';
+import { countAttachmentsByExpense } from '../expenses/expenses.repository.js';
 import * as repository from './balances.repository.js';
 import type { EmployeeRecord } from './balances.repository.js';
 import type { BalanceListQueryInput, StatementQueryInput } from './balances.schema.js';
@@ -83,6 +84,13 @@ export const statement = async (
     repository.statementExpenses(organizationId, userId, query.from, query.to),
   ]);
 
+  // Which expenses carry receipts, so the statement can say so without the
+  // reader opening each one.
+  const receiptCounts = await countAttachmentsByExpense(
+    organizationId,
+    expenses.map((expense) => expense.id),
+  );
+
   type Unsorted = Omit<StatementLineDto, 'runningBalance'> & {
     sortAt: number;
     signed: ReturnType<typeof toDecimal>;
@@ -96,11 +104,12 @@ export const statement = async (
         .join(' · ');
       return {
         id: entry.id,
+        attachmentCount: 0,
         kind: given ? ('CASH_GIVEN' as const) : ('CASH_RETURNED' as const),
         date: formatDateOnly(entry.entryDate),
         documentNo: entry.entryNo,
         particulars: `${given ? 'Cash received' : 'Cash returned'}${detail ? ` — ${detail}` : ''}`,
-        site: entry.site?.name ?? null,
+        site: entry.siteName,
         credit: given ? money(entry.amount) : null,
         debit: given ? null : money(entry.amount),
         sortAt: entry.createdAt.getTime(),
@@ -112,8 +121,12 @@ export const statement = async (
       kind: 'EXPENSE' as const,
       date: formatDateOnly(expense.expenseDate),
       documentNo: expense.expenseNo,
-      particulars: `${expense.category.name} — ${expense.description}`,
-      site: expense.site?.name ?? null,
+      // The remark is optional, so an expense without one reads as its category.
+      particulars: expense.description
+        ? `${expense.category.name} — ${expense.description}`
+        : expense.category.name,
+      site: expense.siteName,
+      attachmentCount: receiptCounts.get(expense.id) ?? 0,
       credit: null,
       debit: money(expense.amount),
       sortAt: expense.createdAt.getTime(),

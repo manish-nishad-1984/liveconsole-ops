@@ -8,9 +8,10 @@ import {
   ArrowUpRight,
   Download,
   FileText,
+  Paperclip,
   Wallet,
 } from 'lucide-react';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 
 import { DataTable, type DataTableColumnMeta } from '@/components/common/DataTable';
@@ -22,6 +23,7 @@ import { useCan } from '@/hooks/use-permissions';
 import { PageLayout } from '@/layouts/PageLayout';
 import { queryKeys } from '@/lib/query-client';
 import { BalanceAmount } from '@/pages/balances/BalancesListPage';
+import { StatementReceipts } from '@/pages/balances/StatementReceipts';
 import { balancesService } from '@/services/petty-cash.service';
 import { useAuthStore } from '@/store/auth.store';
 import { formatDateOnly } from '@/utils/dates';
@@ -57,6 +59,9 @@ const StatementPage = () => {
   });
 
   const data = query.data;
+  // The line whose receipts are open, kept by document number too so the dialog
+  // can title itself without looking the line up again.
+  const [receiptsFor, setReceiptsFor] = useState<{ id: string; documentNo: string } | null>(null);
 
   const columns = useMemo<ColumnDef<StatementLineDto, unknown>[]>(
     () => [
@@ -77,7 +82,31 @@ const StatementPage = () => {
         header: 'Particulars',
         cell: ({ row }) => (
           <div className="min-w-0 max-w-[24rem]">
-            <p className="truncate text-sm">{row.original.particulars}</p>
+            <div className="flex min-w-0 items-center gap-1.5">
+              <p className="truncate text-sm">{row.original.particulars}</p>
+              {/* Says at a glance which expenses came with a bill, so settling a
+                  statement does not mean opening every line to find out. */}
+              {row.original.attachmentCount > 0 ? (
+                <button
+                  type="button"
+                  onClick={() =>
+                    setReceiptsFor({
+                      id: row.original.id,
+                      documentNo: row.original.documentNo,
+                    })
+                  }
+                  className="inline-flex shrink-0 items-center gap-0.5 rounded border border-primary/25
+                    bg-accent px-1.5 py-0.5 text-2xs font-semibold text-accent-foreground
+                    hover:bg-primary hover:text-primary-foreground"
+                  title={`Open ${row.original.attachmentCount} receipt${
+                    row.original.attachmentCount === 1 ? '' : 's'
+                  }`}
+                >
+                  <Paperclip className="size-3" />
+                  {row.original.attachmentCount}
+                </button>
+              ) : null}
+            </div>
             {row.original.site ? (
               <p className="truncate text-2xs text-muted-foreground">{row.original.site}</p>
             ) : null}
@@ -229,6 +258,12 @@ const StatementPage = () => {
             ) : null}
           </>
         }
+      />
+
+      <StatementReceipts
+        expenseId={receiptsFor?.id ?? null}
+        documentNo={receiptsFor?.documentNo ?? null}
+        onOpenChange={(open) => !open && setReceiptsFor(null)}
       />
     </PageLayout>
   );

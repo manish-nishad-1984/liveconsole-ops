@@ -84,7 +84,7 @@ export const statementCashEntries = (
       referenceNo: true,
       notes: true,
       createdAt: true,
-      site: { select: { name: true } },
+      siteName: true,
     },
   });
 
@@ -108,7 +108,7 @@ export const statementExpenses = (
       amount: true,
       description: true,
       createdAt: true,
-      site: { select: { name: true } },
+      siteName: true,
       category: { select: { name: true } },
     },
   });

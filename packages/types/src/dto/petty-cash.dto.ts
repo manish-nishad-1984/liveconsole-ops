@@ -149,6 +149,8 @@ export interface StatementLineDto {
   documentNo: string;
   particulars: string;
   site: string | null;
+  /** Receipts on the expense behind this line; always 0 for a cash entry. */
+  attachmentCount: number;
   /** Money the employee received. */
   credit: MoneyString | null;
   /** Money the employee spent or returned. */
