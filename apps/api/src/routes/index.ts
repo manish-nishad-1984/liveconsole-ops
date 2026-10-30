@@ -9,6 +9,7 @@ import { dashboardRoutes } from '../modules/dashboard/dashboard.routes.js';
 import { expenseCategoriesRoutes } from '../modules/expense-categories/expense-categories.routes.js';
 import { expensesRoutes } from '../modules/expenses/expenses.routes.js';
 import { rolesRoutes } from '../modules/roles/roles.routes.js';
+import { ledgerClosuresRoutes } from '../modules/ledger-closures/ledger-closures.routes.js';
 import { settingsRoutes } from '../modules/settings/settings.routes.js';
 import { usersRoutes } from '../modules/users/users.routes.js';
 import { vehicleRentalsRoutes } from '../modules/vehicle-rentals/vehicle-rentals.routes.js';
@@ -43,6 +44,7 @@ const protectedRoutes: RouteRegistration[] = [
   { path: '/vehicle-rentals', router: vehicleRentalsRoutes },
   { path: '/expense-categories', router: expenseCategoriesRoutes },
   { path: '/settings', router: settingsRoutes },
+  { path: '/ledger-closures', router: ledgerClosuresRoutes },
 ];
 
 export const apiRouter = Router();

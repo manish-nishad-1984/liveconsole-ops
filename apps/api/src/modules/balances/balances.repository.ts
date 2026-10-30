@@ -72,6 +72,7 @@ export const statementCashEntries = (
       organizationId,
       employeeId,
       deletedAt: null,
+      closureId: null,
       entryDate: range(from, to),
     },
     select: {
@@ -99,6 +100,7 @@ export const statementExpenses = (
       organizationId,
       employeeId,
       deletedAt: null,
+      closureId: null,
       expenseDate: range(from, to),
     },
     select: {

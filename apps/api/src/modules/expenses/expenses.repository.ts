@@ -39,7 +39,7 @@ const buildWhere = (
   employeeScope: string | null,
 ): Prisma.ExpenseWhereInput =>
   and(
-    { organizationId, deletedAt: null },
+    { organizationId, deletedAt: null, closureId: null },
     employeeScope ? { employeeId: employeeScope } : equals('employeeId', query.employeeId),
     equals('categoryId', query.categoryId),
     equals('paymentMode', query.paymentMode),
@@ -108,6 +108,7 @@ export const findExpenseById = (
       id,
       organizationId,
       deletedAt: null,
+      closureId: null,
       ...(employeeScope ? { employeeId: employeeScope } : {}),
     },
     select: expenseSelect,

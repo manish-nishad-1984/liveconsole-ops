@@ -9,6 +9,7 @@ import {
   computeTotals,
   employeeScope,
   lastActivityDates,
+  openingFor,
   totalsFor,
 } from '../../services/ledger.service.js';
 import { countAttachmentsByExpense } from '../expenses/expenses.repository.js';
@@ -79,7 +80,12 @@ export const statement = async (
   if (!employee) throw new NotFoundError('Employee');
 
   const [opening, cashEntries, expenses] = await Promise.all([
-    query.from ? totalsFor(organizationId, userId, { before: query.from }) : null,
+    // Without a date filter the lines below are the whole open period, so the
+    // opening figure is what the closures carried forward — which is not zero
+    // once the books have been closed.
+    query.from
+      ? totalsFor(organizationId, userId, { before: query.from }).then((t) => t.balance)
+      : openingFor(organizationId, userId),
     repository.statementCashEntries(organizationId, userId, query.from, query.to),
     repository.statementExpenses(organizationId, userId, query.from, query.to),
   ]);
@@ -134,7 +140,7 @@ export const statement = async (
     })),
   ].sort((a, b) => (a.date === b.date ? a.sortAt - b.sortAt : a.date < b.date ? -1 : 1));
 
-  const openingBalance = opening?.balance ?? ZERO;
+  const openingBalance = opening ?? ZERO;
   let running = openingBalance;
   let totalCredit = ZERO;
   let totalDebit = ZERO;

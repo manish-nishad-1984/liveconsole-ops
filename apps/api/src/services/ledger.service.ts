@@ -9,7 +9,11 @@ import { actorCan, getActorId } from '../lib/requestContext.js';
 /**
  * The petty cash ledger, stated once.
  *
- *   balance = cash GIVEN − cash RETURNED − expenses
+ *   balance = opening + cash GIVEN − cash RETURNED − expenses
+ *
+ * The opening is what an employee held when an administrator last closed the
+ * books; it is zero until that happens. Entries archived by a closure are
+ * excluded everywhere — they were counted once, into that opening.
  *
  * Balances, the statement, the dashboard and the "cannot return more than they
  * hold" rule all read from here, so there is exactly one definition of what an
@@ -29,6 +33,8 @@ export const employeeScope = (...seeAll: PermissionKey[]): string | null => {
 };
 
 export interface EmployeeTotals {
+  /** What the employee held when the books were last closed. */
+  opening: Prisma.Decimal;
   cashGiven: Prisma.Decimal;
   cashReturned: Prisma.Decimal;
   expenses: Prisma.Decimal;
@@ -37,6 +43,7 @@ export interface EmployeeTotals {
 }
 
 const emptyTotals = (): EmployeeTotals => ({
+  opening: ZERO,
   cashGiven: ZERO,
   cashReturned: ZERO,
   expenses: ZERO,
@@ -69,12 +76,13 @@ export const computeTotals = async (
   const employeeFilter = filter.employeeIds ? { in: filter.employeeIds } : undefined;
   const dates = dateBound(filter);
 
-  const [cash, expenses] = await Promise.all([
+  const [cash, expenses, openings] = await Promise.all([
     db.cashEntry.groupBy({
       by: ['employeeId', 'type'],
       where: {
         organizationId,
         deletedAt: null,
+        closureId: null,
         employeeId: employeeFilter,
         entryDate: dates,
         ...(filter.excludeCashEntryId ? { id: { not: filter.excludeCashEntryId } } : {}),
@@ -86,11 +94,26 @@ export const computeTotals = async (
       where: {
         organizationId,
         deletedAt: null,
+        closureId: null,
         employeeId: employeeFilter,
         expenseDate: dates,
       },
       _sum: { amount: true },
       _count: { _all: true },
+    }),
+    // A reversed closure leaves its openings behind but they stop counting, and
+    // a closure dated after the window being asked about has not happened yet.
+    db.ledgerOpening.groupBy({
+      by: ['employeeId'],
+      where: {
+        organizationId,
+        employeeId: employeeFilter,
+        // A figure a later closure rolled into its own opening must not be
+        // counted twice, and a reversed closure's openings stop counting.
+        supersededById: null,
+        closure: { reversedAt: null, closedOn: dates },
+      },
+      _sum: { amount: true },
     }),
   ]);
 
@@ -116,8 +139,16 @@ export const computeTotals = async (
     target.expenseCount = row._count._all;
   }
 
+  // More than one closure can stand at once, so they add up.
+  for (const row of openings) {
+    entry(row.employeeId).opening = toDecimal(row._sum.amount);
+  }
+
   for (const value of totals.values()) {
-    value.balance = value.cashGiven.minus(value.cashReturned).minus(value.expenses);
+    value.balance = value.opening
+      .plus(value.cashGiven)
+      .minus(value.cashReturned)
+      .minus(value.expenses);
   }
 
   return totals;
@@ -133,6 +164,28 @@ export const totalsFor = async (
   return totals.get(employeeId) ?? emptyTotals();
 };
 
+/**
+ * Only the carried-forward part of an employee's balance. The statement needs
+ * this on its own: with no date filter every line it shows is from the open
+ * period, so its opening figure is exactly what the closures carried.
+ */
+export const openingFor = async (
+  organizationId: string,
+  employeeId: string,
+  before?: string,
+): Promise<Prisma.Decimal> => {
+  const result = await prisma.ledgerOpening.aggregate({
+    where: {
+      organizationId,
+      employeeId,
+      supersededById: null,
+      closure: { reversedAt: null, ...(before ? { closedOn: { lt: parseDateOnly(before) } } : {}) },
+    },
+    _sum: { amount: true },
+  });
+  return toDecimal(result._sum.amount);
+};
+
 /** Latest document date per employee, for "last activity" columns. */
 export const lastActivityDates = async (
   organizationId: string,
@@ -143,12 +196,12 @@ export const lastActivityDates = async (
   const [cash, expenses] = await Promise.all([
     prisma.cashEntry.groupBy({
       by: ['employeeId'],
-      where: { organizationId, deletedAt: null, employeeId: employeeFilter },
+      where: { organizationId, deletedAt: null, closureId: null, employeeId: employeeFilter },
       _max: { entryDate: true },
     }),
     prisma.expense.groupBy({
       by: ['employeeId'],
-      where: { organizationId, deletedAt: null, employeeId: employeeFilter },
+      where: { organizationId, deletedAt: null, closureId: null, employeeId: employeeFilter },
       _max: { expenseDate: true },
     }),
   ]);

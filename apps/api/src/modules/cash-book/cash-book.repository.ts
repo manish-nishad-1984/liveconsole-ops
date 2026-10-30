@@ -36,7 +36,7 @@ const buildWhere = (
   employeeScope: string | null,
 ): Prisma.CashEntryWhereInput =>
   and(
-    { organizationId, deletedAt: null },
+    { organizationId, deletedAt: null, closureId: null },
     employeeScope ? { employeeId: employeeScope } : equals('employeeId', query.employeeId),
     equals('type', query.type),
     equals('paymentMode', query.paymentMode),
@@ -90,7 +90,7 @@ export const sumExpenses = (
 ) =>
   prisma.expense.aggregate({
     where: and(
-      { organizationId, deletedAt: null },
+      { organizationId, deletedAt: null, closureId: null },
       employeeScope ? { employeeId: employeeScope } : equals('employeeId', query.employeeId),
         query.from || query.to
         ? {
@@ -126,6 +126,7 @@ export const findCashEntryById = (
       id,
       organizationId,
       deletedAt: null,
+      closureId: null,
       ...(employeeScope ? { employeeId: employeeScope } : {}),
     },
     select: cashEntrySelect,

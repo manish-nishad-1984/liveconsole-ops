@@ -43,6 +43,7 @@ export const getSummary = async (): Promise<DashboardSummaryDto> => {
   const monthSpend = {
     organizationId,
     deletedAt: null,
+    closureId: null,
     ...employeeFilter,
     expenseDate: { gte: monthStart },
   } satisfies Prisma.ExpenseWhereInput;
@@ -62,6 +63,7 @@ export const getSummary = async (): Promise<DashboardSummaryDto> => {
       where: {
         organizationId,
         deletedAt: null,
+        closureId: null,
         ...employeeFilter,
         type: 'GIVEN',
         entryDate: { gte: monthStart },
@@ -73,6 +75,7 @@ export const getSummary = async (): Promise<DashboardSummaryDto> => {
       where: {
         organizationId,
         deletedAt: null,
+        closureId: null,
         ...employeeFilter,
       },
       select: expenseSelect,

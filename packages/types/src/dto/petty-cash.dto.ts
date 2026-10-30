@@ -168,3 +168,45 @@ export interface StatementDto {
   closingBalance: MoneyString;
   lines: StatementLineDto[];
 }
+
+/* ------------------------------------------------------------------ */
+/* Closing the books                                                   */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Drawing a line under everything recorded so far: each employee's balance
+ * becomes an opening figure and the entries behind it stop counting. Nothing is
+ * deleted, and `DELETE` puts it all back — which is also how it gets tested.
+ */
+export interface LedgerClosureDto extends AuditFields {
+  id: UUID;
+  closedOn: DateOnlyString;
+  note: string | null;
+  /** Cash entries and expenses this closure archived. */
+  entryCount: number;
+  /** The openings it created, added together. */
+  openingTotal: MoneyString;
+  employeeCount: number;
+  reversedAt: ISODateString | null;
+  openings?: LedgerOpeningDto[];
+}
+
+export interface LedgerOpeningDto {
+  employee: PersonRef;
+  /** Negative when the employee had spent more than they were given. */
+  amount: MoneyString;
+}
+
+/** What closing right now would do, so it can be read before it is done. */
+export interface LedgerClosurePreviewDto {
+  closedOn: DateOnlyString;
+  entryCount: number;
+  cashEntryCount: number;
+  expenseCount: number;
+  openingTotal: MoneyString;
+  openings: LedgerOpeningDto[];
+}
+
+export interface LedgerClosureRequest {
+  note?: string | null;
+}

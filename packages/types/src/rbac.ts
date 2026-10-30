@@ -44,6 +44,9 @@ export const MODULE_PERMISSIONS = {
   // Transport. `manage` = every employee's rentals; otherwise the ones they are in charge of.
   transport: [...CRUD, 'export', 'manage'],
 
+  // Closing the books: 'create' draws the line, 'delete' undoes it.
+  ledger_closures: ['view', 'create', 'delete'],
+
   // Masters
   expense_categories: [...CRUD],
 } as const satisfies Record<string, readonly ActionKey[]>;

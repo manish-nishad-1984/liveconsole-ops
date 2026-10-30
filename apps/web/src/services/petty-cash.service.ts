@@ -7,6 +7,9 @@ import type {
   ExpenseDto,
   ExpenseListDto,
   ExpenseRequest,
+  LedgerClosureDto,
+  LedgerClosurePreviewDto,
+  LedgerClosureRequest,
   StatementDto,
 } from '@liveconsole-ops/types';
 
@@ -46,4 +49,16 @@ export const balancesService = {
   exportCsv: (params: QueryParams) => api.download('/balances/export', params),
   exportStatementCsv: (userId: string, params: QueryParams) =>
     api.download(`/balances/${userId}/statement/export`, params),
+};
+
+/**
+ * Closing the books. `remove` is an undo, not a delete: the entries come back
+ * and the carried balances stop counting.
+ */
+export const ledgerClosuresService = {
+  preview: () => api.get<LedgerClosurePreviewDto>('/ledger-closures/preview'),
+  list: () => api.get<LedgerClosureDto[]>('/ledger-closures'),
+  create: (payload: LedgerClosureRequest) =>
+    api.post<LedgerClosureDto>('/ledger-closures', payload),
+  remove: (id: string) => api.delete<LedgerClosureDto>(`/ledger-closures/${id}`),
 };

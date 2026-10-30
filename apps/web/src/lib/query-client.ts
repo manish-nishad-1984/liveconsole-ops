@@ -116,6 +116,11 @@ export const queryKeys = {
    * from petty cash is an expense, so reviewing that expense changes what a rental
    * shows as paid, and recording a payment changes balances and the dashboard.
    */
+  ledgerClosures: {
+    all: ['ledger-closures'] as const,
+    preview: ['ledger-closures', 'preview'] as const,
+  },
+
   settings: {
     all: ['settings'] as const,
   },

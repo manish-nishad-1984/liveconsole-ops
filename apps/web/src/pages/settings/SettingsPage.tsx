@@ -14,6 +14,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useCan } from '@/hooks/use-permissions';
 import { PageLayout } from '@/layouts/PageLayout';
+import LedgerClosureCard from '@/pages/settings/LedgerClosureCard';
 import { queryKeys } from '@/lib/query-client';
 import { settingsService } from '@/services/masters.service';
 import { applyFieldErrors } from '@/utils/errors';
@@ -21,9 +22,9 @@ import { applyFieldErrors } from '@/utils/errors';
 /**
  * Settings — the rules the office can change without a release.
  *
- * One setting so far, so the screen is a single card rather than a tabbed shell:
- * how far back site staff may date an expense. Administrators are not bound by
- * it, which is the point — they are who an employee goes to when it bites.
+ * Two cards: how far back site staff may date an expense, and closing the books
+ * to carry every balance forward. Administrators are not bound by the first,
+ * which is the point — they are who an employee goes to when it bites.
  */
 
 const schema = z.object({
@@ -143,6 +144,8 @@ const SettingsPage = () => {
           </CardContent>
         </Card>
       )}
+
+      <LedgerClosureCard />
     </PageLayout>
   );
 };
