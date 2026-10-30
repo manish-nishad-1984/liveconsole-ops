@@ -5,10 +5,19 @@
  *   npm run deploy -- --skip-build reuse the existing dist folders
  *   npm run deploy -- --skip-db    do not touch the database
  *   npm run deploy -- --dry-run    show what would be uploaded, change nothing
+ *   npm run deploy -- --target=X   release the second installation instead
  *
  * Configuration (a file locally, environment variables in CI):
  *   .env.deploy                FTP_HOST, FTP_USER, FTP_PASSWORD, FTP_ROOT, SITE_URL
  *   apps/api/.env.production   the server's runtime .env (or PRODUCTION_ENV in CI)
+ *
+ * The same code serves more than one client, each with its own site folder,
+ * database and secrets. `--target=bstart` reads `.env.deploy.bstart` and
+ * `apps/api/.env.production.bstart` instead of the two files above; with no
+ * target it is the original site. Both files for a target must exist, and the
+ * banner below prints where the release is actually going — uploading one
+ * client's build into another's folder is the one mistake here that cannot be
+ * undone from this script.
  *
  * Server layout:
  *   /web.config          static site + rewrites (rewritten every deploy → recycles Node)
@@ -50,7 +59,21 @@ const fail = (message) => {
 
 const readIfExists = (file) => (fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : null);
 
-const deployFile = readIfExists(path.join(root, '.env.deploy'));
+/** `--target=bstart` → the ".bstart" pair; no target → the original files. */
+const target = [...args].reduce(
+  (found, arg) => (arg.startsWith('--target=') ? arg.slice('--target='.length) : found),
+  '',
+);
+if ([...args].includes('--target')) {
+  fail('--target needs a name, as in --target=bstart');
+}
+const suffix = target ? `.${target}` : '';
+
+const deployConfig = `.env.deploy${suffix}`;
+const runtimeConfig = `apps/api/.env.production${suffix}`;
+
+const deployFile = readIfExists(path.join(root, deployConfig));
+if (target && !deployFile) fail(`${deployConfig} is missing — is "${target}" the right target?`);
 const deployEnv = { ...(deployFile ? dotenv.parse(deployFile) : {}), ...process.env };
 
 for (const key of ['FTP_HOST', 'FTP_USER', 'FTP_PASSWORD', 'SITE_URL']) {
@@ -61,9 +84,27 @@ const ftpRoot = (deployEnv.FTP_ROOT || '/').replace(/\/?$/, '/');
 const siteUrl = deployEnv.SITE_URL.replace(/\/$/, '');
 
 const runtimeEnvText =
-  process.env.PRODUCTION_ENV ?? readIfExists(path.join(root, 'apps/api/.env.production'));
-if (!runtimeEnvText) fail('apps/api/.env.production is missing (or set PRODUCTION_ENV)');
+  process.env.PRODUCTION_ENV ?? readIfExists(path.join(root, runtimeConfig));
+if (!runtimeEnvText) fail(`${runtimeConfig} is missing (or set PRODUCTION_ENV)`);
 const runtimeEnv = dotenv.parse(runtimeEnvText);
+
+/**
+ * Say out loud where this is going. Two installations share this script, and the
+ * only thing separating them is which files were read a few lines above — so the
+ * database and the FTP folder are printed before anything is written.
+ */
+const databaseName = (() => {
+  try {
+    return new URL(runtimeEnv.DATABASE_URL).pathname.slice(1) || '(unknown)';
+  } catch {
+    return '(unparseable DATABASE_URL)';
+  }
+})();
+
+log(`target     ${target || 'default'}  (${deployConfig} + ${runtimeConfig})`);
+log(`site       ${siteUrl}`);
+log(`ftp        ${deployEnv.FTP_USER}@${deployEnv.FTP_HOST} ${ftpRoot}`);
+log(`database   ${databaseName}`);
 
 /* ------------------------------------------------------------------ */
 /* Build and database                                                  */
@@ -147,8 +188,25 @@ const rootWebConfig = Buffer.from(
 /* Sync                                                                */
 /* ------------------------------------------------------------------ */
 
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
 const client = new Client(60_000);
 const createdDirs = new Set();
+
+const ftpAccess = {
+  host: deployEnv.FTP_HOST,
+  user: deployEnv.FTP_USER,
+  password: deployEnv.FTP_PASSWORD,
+  secure: deployEnv.FTP_SECURE !== 'false',
+  secureOptions: { rejectUnauthorized: false },
+};
+
+/** A closed client reopens on `access`, which is how a retry gets a live socket. */
+const connect = async () => {
+  await client.access(ftpAccess);
+  await client.cd(ftpRoot);
+  createdDirs.clear();
+};
 
 const remote = (relative) => `${ftpRoot}${relative}`;
 
@@ -168,21 +226,42 @@ const download = async (relative) => {
   }
 };
 
-const upload = async (relative, source) => {
+const uploadOnce = async (relative, source) => {
   const dir = path.posix.dirname(relative);
   if (dir !== '.' && !createdDirs.has(dir)) {
     await client.ensureDir(remote(dir));
     await client.cd(ftpRoot);
     createdDirs.add(dir);
   }
+  // A stream cannot be replayed, so each attempt opens its own.
   const input = Buffer.isBuffer(source) ? Readable.from(source) : fs.createReadStream(source);
   await client.uploadFrom(input, remote(relative));
 };
 
+/**
+ * The host drops the connection part way through a long run of uploads, so each
+ * file gets a few attempts on a fresh connection. A release that changes a
+ * handful of files never sees this; a site's first one, which sends every file,
+ * does not get through without it.
+ */
+const ATTEMPTS = 4;
+
+const upload = async (relative, source) => {
+  for (let attempt = 1; ; attempt += 1) {
+    try {
+      return await uploadOnce(relative, source);
+    } catch (error) {
+      if (attempt === ATTEMPTS) throw error;
+      log(`  ${relative} failed (${error.message}) — reconnecting`);
+      client.close();
+      await sleep(2_000 * attempt);
+      await connect();
+    }
+  }
+};
+
 const formatBytes = (bytes) =>
   bytes > 1024 * 1024 ? `${(bytes / 1024 / 1024).toFixed(1)} MB` : `${Math.ceil(bytes / 1024)} KB`;
-
-const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const healthCheck = async () => {
   const url = `${siteUrl}/api/v1/health/ready`;
@@ -201,14 +280,7 @@ const healthCheck = async () => {
 
 try {
   log(`connecting to ${deployEnv.FTP_HOST}`);
-  await client.access({
-    host: deployEnv.FTP_HOST,
-    user: deployEnv.FTP_USER,
-    password: deployEnv.FTP_PASSWORD,
-    secure: deployEnv.FTP_SECURE !== 'false',
-    secureOptions: { rejectUnauthorized: false },
-  });
-  await client.cd(ftpRoot);
+  await connect();
 
   const previousText = await download(MANIFEST_PATH);
   const previous = previousText ? JSON.parse(previousText.toString('utf8')).files : {};
